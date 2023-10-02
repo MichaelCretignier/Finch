@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -55,7 +55,7 @@ def format_name(val,k1):
     else:
         return '%.3f'%(val)
 
-def corner(dataframe,fig=None):
+def corner(dataframe, score=None, fig=None):
     nb = len(dataframe.keys())
     offset=nb
     if fig is None:
@@ -69,18 +69,37 @@ def corner(dataframe,fig=None):
     std_df = dataframe.std()
     z = (dataframe-mean_df)/std_df
 
+    if score is None:
+        score = np.ones(len(dataframe))
+        score[0] = 0
+        vmin = 0
+        vmax = 1
+    else:
+        vmin = np.percentile(score,5)
+        vmax = np.percentile(score,95)
+
+    sub = score>np.percentile(score,33)
+    fig.add_subplot(gs_corner[0,-1])
+    for n,kw in enumerate(['period','K']):
+        v = np.median(np.array(dataframe[kw])[sub])
+        v_std = np.std(np.array(dataframe[kw])[sub])
+        tex = [r'$P_{mag}=$%.2f $\pm$ %.2f'%(v,v_std),r'$K=$%.3f $\pm$ %.3f'%(v,v_std)][n]
+        plt.text(-0.9,-0.25*n,tex,ha='left',va='center',fontsize=13) ; plt.xlim(-1,1) ; plt.ylim(-1,1)
+    plt.axis('off')
+
     for i,k1 in enumerate(dataframe.keys()):
         for j,k2 in enumerate(dataframe.keys()):
             if i==j:
                 fig.add_subplot(gs_corner[i,offset+j])
                 plt.tick_params(direction='in',top=True,right=True)
-                plt.hist(z[k1],bins=15)
+                plt.hist(z[k1],bins=15,histtype='step',orientation=['vertical','horizontal'][int(i==nb-1)])
+                plt.hist(z[k1][sub],bins=15,histtype='step',color='k',orientation=['vertical','horizontal'][int(i==nb-1)])
                 plt.tick_params(labelbottom=False)
                 plt.title(r'$\frac{%s-%s}{%s}$'%(k1,format_name(mean_df[k1],k1),format_name(std_df[k1],k1)),fontsize=14)
             elif i>j:
                 fig.add_subplot(gs_corner[i,offset+j])
                 plt.tick_params(direction='in',top=True,right=True)
-                plt.scatter(z[k2],z[k1],alpha=0.1,color='k',marker='.')
+                plt.scatter(z[k2],z[k1],alpha=0.3,c=score,marker='.',cmap='Greys',vmin=vmin,vmax=vmax)
 
             if i==nb-1:
                 plt.tick_params(labelleft=False)
@@ -447,22 +466,7 @@ class tableXY(object):
             chi2_reduced = chi2/(len(x_val)-len(params))
 
             residus = sample - np.dot(coeff.T,base_vec)
-
-            if False: #use_gradient to penalize model
-                x_grad = self.grad.x
-                x_grad = np.sort(np.ravel(x_grad+np.array([-0.5,0.5])[:,np.newaxis]))
-                z_grad = (x_grad-mean_x)/x_std
-                base_for_grad = create_base(x_grad-mean_x,z_grad,period,trend_degree)
-                model2 = np.dot(coeff.T,base_for_grad)
-                model_grad = np.diff(model2,axis=1)[:,0::2]
-                #self.grad.plot()
-                #plt.scatter(self.grad.x,np.mean(model_grad,axis=0))
-                #pouet
-                residus_grad = self.grad.y - model_grad                
-                all_chi2.append(np.sum(np.hstack([residus,residus_grad])**2/np.hstack([yerr_val,self.grad.yerr])**2,axis=1))
-            else:
-                all_chi2.append(np.sum(residus**2/yerr_val**2,axis=1))
-
+            all_chi2.append(np.sum(residus**2/yerr_val**2,axis=1))
 
             K_boot = np.sqrt(coeff[0]**2+coeff[1]**2)
             phi_boot = np.arctan2(coeff[1],coeff[0])
@@ -551,12 +555,18 @@ class tableXY(object):
         density_interp /= np.sum(density_interp)
 
         model_plot = []
+        all_chi2_grad = []
         for period,proba in zip(period_interp,density_interp):
 
             base_vec = create_base(x_val-mean_x,(x_val-mean_x)/x_std,period,trend_degree)
             coeff,sample = timeseries.fit_base(base_vec,perm=int(perm*proba)+1)
             model = np.dot(coeff.T,base_vec)
             all_model.append(model)
+
+            K = np.sqrt(coeff[0]**2+coeff[1]**2)
+            phi = np.arctan2(coeff[1],coeff[0])
+            all_coeff = np.vstack([np.ones(len(coeff[0]))*period,K,phi,coeff])
+            coeff_likelihood.append(all_coeff)
 
             mask_coeff = np.array([len(c.split('_'))==1 for c in name0[3:]])
             if ax is not None:
@@ -565,17 +575,25 @@ class tableXY(object):
                 model = np.dot(coeff[mask_coeff].T,base_vec)
                 ax.plot(x_interp,model.T[:,::1],alpha=0.01,color='k',zorder=1)  
                 model_plot.append(model)
-            
-            K = np.sqrt(coeff[0]**2+coeff[1]**2)
-            phi = np.arctan2(coeff[1],coeff[0])
-            all_coeff = np.vstack([np.ones(len(coeff[0]))*period,K,phi,coeff])
-            coeff_likelihood.append(all_coeff)
+        
+            if True: #use_gradient to select best params
+                x_grad = self.grad.x
+                x_grad = np.sort(np.ravel(x_grad+np.array([-0.5,0.5])[:,np.newaxis]))
+                z_grad = (x_grad-mean_x)/x_std
+                base_for_grad = create_base(x_grad-mean_x, z_grad, period, trend_degree)
+                model2 = np.dot(coeff.T,base_for_grad)
+                model_grad = np.diff(model2,axis=1)[:,0::2]
+                residus_grad = self.grad.y - model_grad         
+                chi2_grad = np.sum(residus_grad**2/self.grad.yerr**2,axis=1)
+                all_chi2_grad.append(chi2_grad)
 
         coeff_likelihood = np.hstack(coeff_likelihood)
         coeff_likelihood = pd.DataFrame(coeff_likelihood.T,columns=name0)
         coeff_likelihood = coeff_likelihood.drop(columns=['A','B'])
         coeff_likelihood['phi'] = 180*coeff_likelihood['phi']/np.pi
         coeff_likelihood['period'] = coeff_likelihood['period']/365.25
+        all_chi2_grad = np.hstack(all_chi2_grad) 
+        lk_grad = -0.5*np.log10(all_chi2_grad)
 
         all_model = np.vstack(all_model)
         model_plot = np.vstack(model_plot)
@@ -598,7 +616,7 @@ class tableXY(object):
 
         self.mcmc_table = coeff_likelihood
 
-        corner(coeff_likelihood,fig=fig)
+        corner(coeff_likelihood,score=lk_grad,fig=fig)
 
         if (self.Pmag==self.Pmag_sup)|(self.Pmag==self.Pmag_inf):
             warning=1
