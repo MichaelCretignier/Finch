@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -580,8 +580,8 @@ class tableXY(object):
                 x_grad = self.grad.x
                 x_grad = np.sort(np.ravel(x_grad+np.array([-0.5,0.5])[:,np.newaxis]))
                 z_grad = (x_grad-mean_x)/x_std
-                base_for_grad = create_base(x_grad-mean_x, z_grad, period, trend_degree)
-                model2 = np.dot(coeff.T,base_for_grad)
+                base_for_grad = create_base(x_grad-mean_x, z_grad, period, trend_degree,ins_offset=False)
+                model2 = np.dot(coeff[mask_coeff].T,base_for_grad)
                 model_grad = np.diff(model2,axis=1)[:,0::2]
                 residus_grad = self.grad.y - model_grad         
                 chi2_grad = np.sum(residus_grad**2/self.grad.yerr**2,axis=1)
