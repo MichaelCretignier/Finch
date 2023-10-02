@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -605,7 +605,7 @@ class tableXY(object):
 
         for m in minor_instruments:
             offset = np.mean(coeff_likelihood['C_{%s}'%(m)])
-            self.y[self.instrument==m] -= offset
+            timeseries.y[timeseries.instrument==m] -= offset
 
         if ax is not None:
             ax.plot(x_interp,np.percentile(model_plot,50,axis=0),color='k',ls='-',lw=2)
