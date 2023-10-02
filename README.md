@@ -6,7 +6,7 @@ EMAIL : michael.cretignier@physics.ox.ac.uk
 Finch is a Python stand-alone code to fit the stellar magnetic cycle periods on activity proxies' time series.
 The code is fast and outlier-robust in order to deliver a period and its related uncertainty in a few seconds.
 
-https://github.com/MichaelCretignier/MagPy
+https://github.com/MichaelCretignier/Finch
 
 ————————-————————-—
 IMPORTANT INFORMATION :
