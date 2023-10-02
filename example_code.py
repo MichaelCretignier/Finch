@@ -1,7 +1,7 @@
 
 import pandas as pd
 
-import MagPy as MagPy
+import Finch as Finch
 
 # =============================================================================
 # Playground
@@ -10,7 +10,7 @@ import MagPy as MagPy
 star_dataset = '6' #test also 2,3,4,5,6,7
 table = pd.read_csv('./dataset_test/table_star%s.csv'%(star_dataset))
 
-vec = MagPy.tableXY(
+vec = Finch.tableXY(
     table['time'].astype('float'), 
     table['proxy'].astype('float'), 
     table['proxy_err'].astype('float'), 
