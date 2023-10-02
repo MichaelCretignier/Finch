@@ -20,7 +20,12 @@ ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
 REQUIREMENT :
 —————————————
 
-Standard python libraries : numpy (1.20.1), scipy, matplotlib, pandas
+Standard python libraries : 
+
+numpy (1.20.1) 
+scipy (1.7.3)
+matplotlib (3.3.4)
+pandas (1.4.1)
 
 —————————————
 CODE DETAIL :

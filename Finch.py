@@ -1,8 +1,11 @@
+#Created by Michael Cretignier 31.09.2023
+
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
+__version__ = '1.0.0'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
