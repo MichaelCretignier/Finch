@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.2.1'
+__version__ = '1.3.1'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -79,12 +79,17 @@ def corner(dataframe, score=None, fig=None):
         vmax = np.percentile(score,95)
 
     sub = score>np.percentile(score,33)
-    fig.add_subplot(gs_corner[0,-1])
+    
+    fig.add_subplot(gs_corner[0,-2])
+    warning = 0
     for n,kw in enumerate(['period','K']):
         v = np.median(np.array(dataframe[kw])[sub])
         v_std = np.std(np.array(dataframe[kw])[sub])
-        tex = [r'$P_{mag}=$%.2f $\pm$ %.2f'%(v,v_std),r'$K=$%.3f $\pm$ %.3f'%(v,v_std)][n]
+        tex = [r'$P_{mag}=$%.2f $\pm$ %.2f years'%(v,v_std),r'$K=$%.4f $\pm$ %.4f'%(v,v_std)][n]
         plt.text(-0.9,-0.25*n,tex,ha='left',va='center',fontsize=13) ; plt.xlim(-1,1) ; plt.ylim(-1,1)
+        if abs(v)/v_std<3:
+            warning = 1
+    plt.text(-0.9,0.9,['Cycle detected','Cycle not detected'][warning],color=['g','r'][warning],fontsize=14)
     plt.axis('off')
 
     for i,k1 in enumerate(dataframe.keys()):
@@ -358,7 +363,8 @@ class tableXY(object):
         
         new_yerr = np.array(new_yerr)
         if data_driven_std:
-            new_yerr[np.array(self.seasons_nb)<=4] = np.mean(new_yerr[np.array(self.seasons_nb)>4])
+            yerr_driven = np.mean(new_yerr[np.array(self.seasons_nb)>4])
+            new_yerr[np.array(self.seasons_nb)<=4] = np.sqrt((yerr_driven)**2+(new_yerr[np.array(self.seasons_nb)<=4])**2)
 
         self.bin = tableXY(new_x,new_y,new_yerr)
         self.bin.grad = tableXY(new_gradx,new_grady,new_gradyerr)
@@ -644,14 +650,31 @@ class tableXY(object):
         trend_degree [int] : polynomial drift
         """
         self.night_stack()
+        self.split_seasons()
         reference = self.copy()
+        #self.split_seasons()
         self.split_instrument()
         for ins in self.instrument_splited.keys():
             self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
             if data_driven_std: #second iteration for uncertainties on slope params
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
-
         self.merge_instrument()
+
+        #bad season value
+        mask = rm_outliers(self.bin.y,m=5)[0]
+        self.bin.masked(mask)
+        if sum(~mask):
+            mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
+            self.masked(mask2)
+            self.seasons_species = self.seasons_species[mask2]
+
+        #bad season value
+        mask = self.bin.yerr<=mad(self.bin.y)*10
+        self.bin.masked(mask)
+        if sum(~mask):
+            mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
+            self.masked(mask2)
+            self.seasons_species = self.seasons_species[mask2]
 
         vec = [self,self.bin]
 
