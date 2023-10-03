@@ -675,7 +675,7 @@ class tableXY(object):
         return warning, Pmag_conservative, Pmag
 
 
-    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument=False, automatic_fit=False, debug=False, fig_title=''):
+    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title=''):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
@@ -726,6 +726,9 @@ class tableXY(object):
 
         if automatic_fit:
 
+            if offset_instrument=='no!':
+                params = np.array([[0,False],[1,False]])
+            
             if (offset_instrument=='yes!')&(len(np.unique(vec[int(season_bin)].instrument))>1):
                 params = np.array([[0,True],[1,True]])
             else:
@@ -750,7 +753,7 @@ class tableXY(object):
             print('[AUTOMATIC] Model selected : instrument_offset = %.0f + Trend_degree = %.0f'%(offset_instrument,trend_degree))
             print('===========\n')
 
-        offset_instrument = {'yes':True,'yes!':True,'no':False, True:True, False:False}[offset_instrument]
+        offset_instrument = {'yes':True,'yes!':True,'no':False, 'no!':False, True:True, False:False}[offset_instrument]
 
         warning2, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument)
 
