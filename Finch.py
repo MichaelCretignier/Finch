@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.1'
+__version__ = '1.3.2'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -406,9 +406,10 @@ class tableXY(object):
             count = pd.DataFrame(self.instrument).value_counts().sort_values(ascending=False)
             major_instrument = count.keys()[0][0]
             count = count[1:]
-            minor_instruments = np.hstack(count[count>1].keys())
-            if len(minor_instruments):
-                print('[INFO] Minor instrument detected : ',minor_instruments,' vs. Major instrument : %s'%(major_instrument))
+            if sum(count>1):
+                minor_instruments = np.hstack(count[count>1].keys())
+                if len(minor_instruments):
+                    print('[INFO] Minor instrument detected : ',minor_instruments,' vs. Major instrument : %s'%(major_instrument))
 
         x_val = self.x.copy()
         y_val = self.y.copy()
@@ -422,7 +423,10 @@ class tableXY(object):
             y_val = y_val[kept]
             yerr_val = yerr_val[kept]
             ins_val = ins_val[kept]
-
+            removed = np.setdiff1d(self.instrument,np.array(liste))
+            if len(removed):
+                print('[INFO] Instrument removed from the fit because single season',removed)
+            
         timeseries = tableXY(x_val,y_val,yerr_val)
         timeseries.instrument = ins_val
 
