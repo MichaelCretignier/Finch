@@ -1,11 +1,13 @@
 #Created by Michael Cretignier 31.09.2023
 
+import datetime
+
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.3'
+__version__ = '1.3.5'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -55,6 +57,11 @@ def format_name(val,k1):
     else:
         return '%.3f'%(val)
 
+def today():
+    today = datetime.datetime.now().isoformat()
+    jdb = Time.Time(today, format='isot').jd-2400000
+    return jdb
+
 def corner(dataframe, score=None, fig=None):
     nb = len(dataframe.keys())
     offset=nb
@@ -80,7 +87,7 @@ def corner(dataframe, score=None, fig=None):
 
     sub = score>np.percentile(score,33)
     
-    fig.add_subplot(gs_corner[0,-2])
+    fig.add_subplot(5,5,5)
     warning = 0
     for n,kw in enumerate(['period','K']):
         v = np.median(np.array(dataframe[kw])[sub])
@@ -97,7 +104,7 @@ def corner(dataframe, score=None, fig=None):
             if i==j:
                 fig.add_subplot(gs_corner[i,offset+j])
                 plt.tick_params(direction='in',top=True,right=True)
-                plt.hist(z[k1],bins=15,histtype='step',orientation=['vertical','horizontal'][int(i==nb-1)])
+                plt.hist(z[k1],bins=15,histtype='step',color='gray',orientation=['vertical','horizontal'][int(i==nb-1)])
                 plt.hist(z[k1][sub],bins=15,histtype='step',color='k',orientation=['vertical','horizontal'][int(i==nb-1)])
                 plt.tick_params(labelbottom=False)
                 plt.title(r'$\frac{%s-%s}{%s}$'%(k1,format_name(mean_df[k1],k1),format_name(std_df[k1],k1)),fontsize=14)
@@ -407,7 +414,10 @@ class tableXY(object):
         return coeff, sample
 
 
-    def fit_sinus(self, pmin=1000, pmax=None, perm=1000, trend_degree=1, ax=None, ax_chi=None, fmt='.', fig=None, offset_instrument=False, use_gradient=False):
+    def fit_sinus(self, pmin=1000, pmax=None, perm=1000, trend_degree=1, ax=None, ax_chi=None, fmt='.', fig=None, offset_instrument=False, predict_today=False):
+
+        if predict_today:
+            jdb_today = today()
 
         warning = 0
 
@@ -652,9 +662,10 @@ class tableXY(object):
         if ax is not None:
             if values_rejected:
                 timeseries.merge(rejected)
-            ax.plot(x_interp,np.percentile(model_plot,50,axis=0),color='k',ls='-',lw=2)
-            ax.plot(x_interp,np.percentile(model_plot,16,axis=0),color='k',ls='-.',lw=1)
-            ax.plot(x_interp,np.percentile(model_plot,84,axis=0),color='k',ls='-.',lw=1)
+            sub = lk_grad>np.percentile(lk_grad,33)
+            ax.plot(x_interp,np.percentile(model_plot[sub],50,axis=0),color='k',ls='-',lw=2)
+            ax.plot(x_interp,np.percentile(model_plot[sub],16,axis=0),color='k',ls='-.',lw=1)
+            ax.plot(x_interp,np.percentile(model_plot[sub],84,axis=0),color='k',ls='-.',lw=1)
             timeseries.plot(ax=ax,fmt=['o']*(len(np.unique(timeseries.instrument))),mec='k')
             ax.set_title('Degree detrend = %.0f | Offset instrumental = %.0f' %(trend_degree,offset_instrument))
 
@@ -664,7 +675,7 @@ class tableXY(object):
         return warning, Pmag_conservative, Pmag
 
 
-    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument=False, automatic_fit=False, debug=False,fig_title=''):
+    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument=False, automatic_fit=False, debug=False, fig_title=''):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
@@ -713,10 +724,13 @@ class tableXY(object):
 
         if automatic_fit:
 
-            if len(np.unique(vec[int(season_bin)].instrument))>1:
-                params = np.array([[0,False],[1,False],[0,True],[1,True]])
+            if offset_instrument=='yes!':
+                params = np.array([[0,True],[1,True]])
             else:
-                params = np.array([[0,False],[1,False]])
+                if len(np.unique(vec[int(season_bin)].instrument))>1:
+                    params = np.array([[0,False],[1,False],[0,True],[1,True]])
+                else:
+                    params = np.array([[0,False],[1,False]])
             
             metric = []
             for deg, offset in params:
@@ -733,6 +747,8 @@ class tableXY(object):
             print('\n===========')
             print('[AUTOMATIC] Model selected : instrument_offset = %.0f + Trend_degree = %.0f'%(offset_instrument,trend_degree))
             print('===========\n')
+
+        offset_instrument = {'yes':True,'yes!':True,'no':False, True:True, False:False}[offset_instrument]
 
         warning2, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument)
 
