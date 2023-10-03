@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.7'
+__version__ = '1.3.8'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -703,21 +703,23 @@ class tableXY(object):
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
         self.merge_instrument()
 
-        #bad season value
-        mask = rm_outliers(self.bin.y,m=5)[0]
-        self.bin.masked(mask)
-        if sum(~mask):
-            mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
-            self.masked(mask2)
-            self.seasons_species = self.seasons_species[mask2]
+        if len(self.bin.y)>=6:
+            #bad season value
+            mask = rm_outliers(self.bin.y,m=5)[0]
+            self.bin.masked(mask)
+            if sum(~mask):
+                mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
+                self.masked(mask2)
+                self.seasons_species = self.seasons_species[mask2]
 
-        #bad season value
-        mask = self.bin.yerr<=mad(self.bin.y)*10
-        self.bin.masked(mask)
-        if sum(~mask):
-            mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
-            self.masked(mask2)
-            self.seasons_species = self.seasons_species[mask2]
+        if len(self.bin.y)>=6:
+            #bad season value
+            mask = self.bin.yerr<=mad(self.bin.y)*10
+            self.bin.masked(mask)
+            if sum(~mask):
+                mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
+                self.masked(mask2)
+                self.seasons_species = self.seasons_species[mask2]
 
         vec = [self,self.bin]
 
