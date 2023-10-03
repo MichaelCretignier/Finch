@@ -150,14 +150,18 @@ class tableXY(object):
             mask_instrument = self.instrument==ins
             x = self.x[mask_instrument]
             y = self.y[mask_instrument]
+            only_nan = (len(y)==sum(y!=y))
+            
             if yerr_type=='active':
                 yerr = self.yerr[mask_instrument]
             else:
                 yerr = self.yerr_backup[mask_instrument]
-            if ax is None:
-                plt.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
-            else:
-                ax.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
+            
+            if not only_nan:
+                if ax is None:
+                    plt.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
+                else:
+                    ax.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
         
             
     def masked(self,mask,replace=True):
@@ -234,6 +238,12 @@ class tableXY(object):
         for n,ins in enumerate(np.sort(np.unique(self.instrument))):
             mask_instrument = self.instrument==ins
             self.instrument_splited[ins] = self.masked(mask_instrument,replace=False)
+
+    def merge(self,tableXY2):
+        self.x = np.hstack([self.x,tableXY2.x])
+        self.y = np.hstack([self.y,tableXY2.y])
+        self.yerr = np.hstack([self.yerr,tableXY2.yerr])
+        self.instrument = np.hstack([self.instrument,tableXY2.instrument])
 
     def merge_instrument(self):
         x = [] ; y = [] ; yerr = [] ; instrument = []
@@ -416,16 +426,20 @@ class tableXY(object):
         yerr_val = self.yerr.copy()
         ins_val = self.instrument.copy()
 
+        values_rejected = 0
         if offset_instrument: #rm single season instrument if free offset model
             liste = [major_instrument]+list(minor_instruments)
             kept = np.in1d(self.instrument,np.array(liste))
+            removed = np.setdiff1d(self.instrument,np.array(liste))
+            if len(removed):
+                rejected = tableXY(x_val[~kept], y_val[~kept]*np.nan, yerr_val[~kept])
+                rejected.instrument = ins_val[~kept]            
+                print('[INFO] Instrument removed from the fit because single season',removed)
+                values_rejected = 1
             x_val = x_val[kept]
             y_val = y_val[kept]
             yerr_val = yerr_val[kept]
             ins_val = ins_val[kept]
-            removed = np.setdiff1d(self.instrument,np.array(liste))
-            if len(removed):
-                print('[INFO] Instrument removed from the fit because single season',removed)
             
         timeseries = tableXY(x_val,y_val,yerr_val)
         timeseries.instrument = ins_val
@@ -636,6 +650,8 @@ class tableXY(object):
             timeseries.y[timeseries.instrument==m] -= offset
 
         if ax is not None:
+            if values_rejected:
+                timeseries.merge(rejected)
             ax.plot(x_interp,np.percentile(model_plot,50,axis=0),color='k',ls='-',lw=2)
             ax.plot(x_interp,np.percentile(model_plot,16,axis=0),color='k',ls='-.',lw=1)
             ax.plot(x_interp,np.percentile(model_plot,84,axis=0),color='k',ls='-.',lw=1)
