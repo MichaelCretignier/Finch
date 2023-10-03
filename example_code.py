@@ -33,3 +33,11 @@ Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(automatic_fit=True)
 # You can choose to add or remove trend manually 
 
 Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(trend_degree=0, automatic_fit=False)
+
+
+# =============================================================================
+# Predicting current stellar activity level 
+# =============================================================================
+
+Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(automatic_fit=True, predict_today=True)
+

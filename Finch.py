@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.6'
+__version__ = '1.3.7'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -59,8 +59,9 @@ def format_name(val,k1):
 
 def today():
     today = datetime.datetime.now().isoformat()
-    jdb = Time.Time(today, format='isot').jd-2400000
-    return jdb
+    today = float(today[0:4])*365.25+30.5*float(today[5:7])+float(today[8:10])
+    today = today*60221.0478530759/739208.75
+    return today
 
 def corner(dataframe, score=None, fig=None):
     nb = len(dataframe.keys())
@@ -415,7 +416,8 @@ class tableXY(object):
 
 
     def fit_sinus(self, pmin=1000, pmax=None, perm=1000, trend_degree=1, ax=None, ax_chi=None, fmt='.', fig=None, offset_instrument=False, predict_today=False):
-
+        
+        jdb_today = -1
         if predict_today:
             jdb_today = today()
 
@@ -608,7 +610,10 @@ class tableXY(object):
 
             mask_coeff = np.array([len(c.split('_'))==1 for c in name0[3:]])
             if ax is not None:
-                x_interp = np.linspace(np.min(self.x)-0.5*baseline,np.max(self.x)+0.5*baseline,300)
+                xmax = np.max(self.x)+0.5*baseline
+                if jdb_today > np.max(self.x)+0.5*baseline:
+                    xmax = jdb_today+365
+                x_interp = np.linspace(np.min(self.x)-0.5*baseline,xmax,300)
                 base_vec = create_base(x_interp-mean_x,(x_interp-mean_x)/x_std,period,trend_degree,ins_offset=False)
                 model = np.dot(coeff[mask_coeff].T,base_vec)
                 ax.plot(x_interp,model.T[:,::1],alpha=0.01,color='k',zorder=1)  
@@ -672,14 +677,17 @@ class tableXY(object):
             ax.plot(x_interp,np.percentile(model_plot[sub],84,axis=0),color='k',ls='-.',lw=1)
             timeseries.plot(ax=ax,fmt=['o']*(len(np.unique(timeseries.instrument))),mec='k')
             ax.set_title('Degree detrend = %.0f | Offset instrumental = %.0f' %(trend_degree,offset_instrument))
-
+            if predict_today:
+                ax.axvline(x=jdb_today,ls=':',color='k',label='today')
+                ax.legend()
+            
         Pmag_conservative = (self.Pmag/365.25, self.Pmag_inf/365.25, self.Pmag_sup/365.25)
         Pmag = (np.median(coeff_likelihood['period']), np.percentile(coeff_likelihood['period'],16),  np.percentile(coeff_likelihood['period'],84))
 
         return warning, Pmag_conservative, Pmag
 
 
-    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title=''):
+    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict_today=False):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
@@ -759,7 +767,7 @@ class tableXY(object):
 
         offset_instrument = {'yes':True,'yes!':True,'no':False, 'no!':False, True:True, False:False}[offset_instrument]
 
-        warning2, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument)
+        warning2, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument,predict_today=predict_today)
 
         if warning2:
             print('\n[INFO] Conservatives values selected')
