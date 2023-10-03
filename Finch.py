@@ -722,9 +722,11 @@ class tableXY(object):
 
         fig,gs,ax,ax_chi = gen_figure()
 
+
+
         if automatic_fit:
 
-            if offset_instrument=='yes!':
+            if (offset_instrument=='yes!')&(len(np.unique(vec[int(season_bin)].instrument))>1):
                 params = np.array([[0,True],[1,True]])
             else:
                 if len(np.unique(vec[int(season_bin)].instrument))>1:
