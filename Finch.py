@@ -468,6 +468,10 @@ class tableXY(object):
 
         nb_params = 2+trend_degree+1+len(minor_instruments)
         print('\n[INFO] Nb parameter : %.0f | Nb observations : %.0f'%(nb_params,len(x_val)))
+        if (nb_params+1)>=len(x_val):
+            print('[WARNING] Too much parameters compared to number of observations')
+            trend_degree = 0
+            offset_instrument = False
 
         def create_base(x,z,period,trend_degree,ins_offset=True):
             base_sin = np.array([np.sin(2*np.pi/period*x),np.cos(2*np.pi/period*x)])
@@ -728,7 +732,7 @@ class tableXY(object):
 
             if offset_instrument=='no!':
                 params = np.array([[0,False],[1,False]])
-            
+
             if (offset_instrument=='yes!')&(len(np.unique(vec[int(season_bin)].instrument))>1):
                 params = np.array([[0,True],[1,True]])
             else:
