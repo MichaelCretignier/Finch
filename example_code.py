@@ -7,7 +7,7 @@ import Finch as Finch
 # Playground
 # =============================================================================
 
-star_dataset = '6' #test also 2,3,4,5,6,7
+star_dataset = '1' #test also 2,3,4,5,6,7
 table = pd.read_csv('./dataset_test/table_star%s.csv'%(star_dataset))
 
 vec = Finch.tableXY(
