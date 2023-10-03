@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.5'
+__version__ = '1.3.6'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
