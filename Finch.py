@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.8'
+__version__ = '1.3.9'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -280,9 +280,10 @@ class tableXY(object):
         
         mask_kept = np.ones(len(self.x)).astype('bool')
         for i in np.arange(len(seasons[:,0])):
-            sub = self.y[seasons[i,0]:seasons[i,1]+1]
-            mask = abs(sub-np.median(sub))<=mad(sub)*m
-            mask_kept[seasons[i,0]:seasons[i,1]+1] = mask
+            if (seasons[i,1]-seasons[i,0])>10:
+                sub = self.y[seasons[i,0]:seasons[i,1]+1]
+                mask = abs(sub-np.median(sub))<=mad(sub)*m
+                mask_kept[seasons[i,0]:seasons[i,1]+1] = mask
         
         self.masked(mask_kept)
         
@@ -702,7 +703,7 @@ class tableXY(object):
             if data_driven_std: #second iteration for uncertainties on slope params
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
         self.merge_instrument()
-
+        
         if len(self.bin.y)>=6:
             #bad season value
             mask = rm_outliers(self.bin.y,m=5)[0]
@@ -735,8 +736,6 @@ class tableXY(object):
             return fig,gs,ax2,ax_chi2
 
         fig,gs,ax,ax_chi = gen_figure()
-
-
 
         if automatic_fit:
 
