@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.3.9'
+__version__ = '1.4.0'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -658,6 +658,8 @@ class tableXY(object):
         if 'c' in coeff_likelihood.keys():
             coeff_likelihood['c'] *= (365.25/x_std)**2
 
+        mean_x
+
         self.mcmc_table = coeff_likelihood
 
         corner(coeff_likelihood,score=lk_grad,fig=fig)
@@ -800,6 +802,8 @@ class tableXY(object):
         else:
             print('[FINAL REPORT] Pmag = %.2f [%.2f - %.2f]'%(pmag,pmag_inf,pmag_sup))
         print('============== \n')
+
+
 
         return (pmag,pmag_inf,pmag_sup)
 
