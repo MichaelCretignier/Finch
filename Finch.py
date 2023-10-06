@@ -704,9 +704,13 @@ class tableXY(object):
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
         self.merge_instrument()
         
-        if len(self.bin.y)>=6:
+        binned = self.bin.y.copy()
+        for ins in np.unique(self.bin.instrument):
+            binned[self.bin.instrument==ins] -= np.median(binned[self.bin.instrument==ins])
+
+        if len(binned)>=6:
             #bad season value
-            mask = rm_outliers(self.bin.y,m=5)[0]
+            mask = rm_outliers(binned,m=5)[0]
             self.bin.masked(mask)
             if sum(~mask):
                 mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
