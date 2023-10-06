@@ -40,5 +40,6 @@ Output = vec.fit_magnetic_cycle(trend_degree=0, automatic_fit=False)
 # Predicting current stellar activity level 
 # =============================================================================
 
+# time have to be specified in jdb - 2,400,000
 Output = vec.fit_magnetic_cycle(automatic_fit=True, predict_today=True)
 

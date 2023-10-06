@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.4.1'
+__version__ = '1.4.3'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -17,6 +17,59 @@ def get_phase(array,period):
         return 0.5*(new_array[np.argmax(diff)]+new_array[np.argmax(diff)+1])
     else:
         return 0
+
+def return_branching_phase(array):
+    array1 = array%360
+    array2 = (array1+180)%360-180
+    if np.std(array1)<=np.std(array2):
+        return array1
+    else:
+        return array2
+
+
+def match_nearest(array1, array2,random=True):
+    """return a table [idx1,idx2,num1,num2,distance] matching the closest element from two arrays. Remark : algorithm very slow by conception if the arrays are too large."""
+    if type(array1)!=np.ndarray:
+        array1 = np.array(array1)
+    if type(array2)!=np.ndarray:
+        array2 = np.array(array2)    
+    if not (np.product(~np.isnan(array1))*np.product(~np.isnan(array2))):
+        print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
+    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
+    array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
+    liste1 = np.arange(len(array1))[:,np.newaxis]*np.hstack([np.ones(len(array1))[:,np.newaxis],np.zeros(len(array1))[:,np.newaxis]])
+    liste2 = np.arange(len(array2))[:,np.newaxis]*np.hstack([np.ones(len(array2))[:,np.newaxis],np.zeros(len(array2))[:,np.newaxis]])
+    liste1 = liste1.astype('int') ; liste2 = liste2.astype('int')
+    
+    #ensure that the probability for two close value to be the same is null
+    if len(array1)>1:
+        dmin = np.diff(np.sort(array1)).min()
+    else:
+        dmin=0
+    if len(array2)>1:
+        dmin2 = np.diff(np.sort(array2)).min()
+    else:
+        dmin2=0
+    array1_r = array1 + int(random)*0.001*dmin*np.random.randn(len(array1))
+    array2_r = array2 + int(random)*0.001*dmin2*np.random.randn(len(array2))
+    #match nearest
+    m = abs(array2_r-array1_r[:,np.newaxis])
+    arg1 = np.argmin(m,axis=0)
+    arg2 = np.argmin(m,axis=1)
+    mask = (np.arange(len(arg1)) == arg2[arg1])
+    liste_idx1 = arg1[mask]
+    liste_idx2 = arg2[arg1[mask]]
+    array1_k = array1[liste_idx1]
+    array2_k = array2[liste_idx2]
+
+    liste_idx1 = index1[liste_idx1]
+    liste_idx2 = index2[liste_idx2] 
+    
+    mat = np.hstack([liste_idx1[:,np.newaxis],liste_idx2[:,np.newaxis],
+                        array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]]) 
+        
+    return mat
+
 
 def mad(array):
     step = abs(array-np.nanmedian(array))
@@ -130,7 +183,7 @@ def corner(dataframe, score=None, fig=None):
 class tableXY(object):
 
 
-    def __init__(self, x, y, yerr, proxy_name=''):
+    def __init__(self, x, y, yerr, proxy_name='proxy1'):
         self.y = np.array(y)  
         self.x = np.array(x)  
         self.yerr = np.array(yerr)
@@ -347,6 +400,24 @@ class tableXY(object):
 
         self.slope/=x_std
         self.slope_std/=x_std
+
+    def match_proxies(self,tableXY_2):
+        match = match_nearest(self.x,tableXY_2.x)
+        mask1 = np.in1d(np.arange(len(self.x)),match[:,0].astype('int'))
+        mask2 = np.in1d(np.arange(len(tableXY_2.x)),match[:,1].astype('int'))
+        sub1 = self.masked(mask1,replace=False)
+        sub2 = tableXY_2.masked(mask2,replace=False)
+
+        base_vec = np.array([((sub2.x-np.mean(sub2.x))/np.std(sub2.x))**i for i in range(0,2)])
+        base_instrument = np.array([(sub2.instrument==ins).astype('float') for ins in minor_instruments])
+        base_vec = np.vstack([base_vec,base_instrument])
+
+        sub2.fit_base()
+
+
+        coeff, sample = timeseries.fit_base(base_vec,perm=perm)
+
+        return sub1,sub2
 
     def transform_vector(self,Plot=False,data_driven_std=True):
         self.rm_seasons_outliers(m=3)
@@ -659,10 +730,10 @@ class tableXY(object):
         if 'c' in coeff_likelihood.keys():
             coeff_likelihood['c'] *= (365.25/x_std)**2
 
-        print(mean_x,np.median(coeff_likelihood['phi']))
         phi_shift = 360/np.median(coeff_likelihood['period']*365.25)*(mean_x-60000) #reference date - 2,400,000 for the phase shift definition
         coeff_likelihood['phi'] -= (phi_shift%360)
-
+        coeff_likelihood['phi'] = return_branching_phase(coeff_likelihood['phi'])
+        
         self.mcmc_table = coeff_likelihood
 
         corner(coeff_likelihood,score=lk_grad,fig=fig)
@@ -817,7 +888,9 @@ class tableXY(object):
         output_table = np.vstack([np.array([pmag_inf,pmag,pmag_sup]),np.array(pmag_extracted),np.array(pmag_conservative),output_table.T]).T
         output_table = pd.DataFrame(output_table,columns=['P','P_computed','P_conservative']+list(bootstrap_table.keys()[1:]),index=['16%','50%','84%'])
         print('\n[FINAL TABLE]\n')
+        print('-----------------------------------')
         print(output_table[['P','K','phi']])
+        print('-----------------------------------')
 
         return output_table
 
