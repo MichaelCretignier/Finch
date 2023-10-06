@@ -425,9 +425,9 @@ class tableXY(object):
         warning = 0
 
         minor_instruments = []
+        count = pd.DataFrame(self.instrument).value_counts().sort_values(ascending=False)
+        major_instrument = count.keys()[0][0]
         if (offset_instrument)&(len(np.unique(self.instrument))>1):
-            count = pd.DataFrame(self.instrument).value_counts().sort_values(ascending=False)
-            major_instrument = count.keys()[0][0]
             count = count[1:]
             if sum(count>1):
                 minor_instruments = np.hstack(count[count>1].keys())
@@ -636,6 +636,7 @@ class tableXY(object):
         coeff_likelihood = coeff_likelihood.drop(columns=['A','B'])
         coeff_likelihood['phi'] = 180*coeff_likelihood['phi']/np.pi
         coeff_likelihood['period'] = coeff_likelihood['period']/365.25
+        
         all_chi2_grad = np.hstack(all_chi2_grad) 
         lk_grad = -0.5*np.log10(all_chi2_grad)
 
@@ -658,7 +659,9 @@ class tableXY(object):
         if 'c' in coeff_likelihood.keys():
             coeff_likelihood['c'] *= (365.25/x_std)**2
 
-        mean_x
+        print(mean_x,np.median(coeff_likelihood['phi']))
+        phi_shift = 360/np.median(coeff_likelihood['period']*365.25)*(mean_x-60000) #reference date - 2,400,000 for the phase shift definition
+        coeff_likelihood['phi'] -= (phi_shift%360)
 
         self.mcmc_table = coeff_likelihood
 
@@ -684,8 +687,8 @@ class tableXY(object):
                 ax.axvline(x=jdb_today,ls=':',color='k',label='today')
                 ax.legend()
             
-        Pmag_conservative = (self.Pmag/365.25, self.Pmag_inf/365.25, self.Pmag_sup/365.25)
-        Pmag = (np.median(coeff_likelihood['period']), np.percentile(coeff_likelihood['period'],16),  np.percentile(coeff_likelihood['period'],84))
+        Pmag_conservative = (self.Pmag_inf/365.25, self.Pmag/365.25, self.Pmag_sup/365.25)
+        Pmag = (np.percentile(coeff_likelihood['period'],16),np.median(coeff_likelihood['period']),  np.percentile(coeff_likelihood['period'],84))
 
         return warning, Pmag_conservative, Pmag
 
@@ -778,10 +781,10 @@ class tableXY(object):
 
         if warning2:
             print('\n[INFO] Conservatives values selected')
-            pmag,pmag_inf,pmag_sup = pmag_conservative
+            pmag_inf,pmag,pmag_sup = pmag_conservative
         else:
             print('\n[INFO] Extracted values selected')
-            pmag,pmag_inf,pmag_sup = pmag_extracted
+            pmag_inf,pmag,pmag_sup = pmag_extracted
 
         ylim = ax.get_ylim()
         for n,ins in enumerate(np.sort(np.unique(reference.instrument))):
@@ -796,14 +799,25 @@ class tableXY(object):
         if pmag_sup==pmag:
             print('[FINAL REPORT] Pmag > %.2f [%.2f - ???]'%(pmag_inf,pmag_inf))
             pmag = pmag_inf
+            pmag_sup = np.nan
         elif pmag_inf==pmag:
             print('[FINAL REPORT] Pmag < %.2f [??? - %.2f]'%(pmag_sup,pmag_sup))
             pmag = pmag_sup
+            pmag_inf = np.nan
         else:
             print('[FINAL REPORT] Pmag = %.2f [%.2f - %.2f]'%(pmag,pmag_inf,pmag_sup))
         print('============== \n')
 
+        bootstrap_table = vec[int(season_bin)].mcmc_table
+        output_table = np.array([
+            np.percentile(bootstrap_table,16,axis=0) ,
+            np.percentile(bootstrap_table,50,axis=0) ,
+            np.percentile(bootstrap_table,84,axis=0)])[:,1:]
+        pmag_extracted[1],
+        output_table = np.vstack([np.array([pmag_inf,pmag,pmag_sup]),np.array(pmag_extracted),np.array(pmag_conservative),output_table.T]).T
+        output_table = pd.DataFrame(output_table,columns=['P','P_computed','P_conservative']+list(bootstrap_table.keys()[1:]),index=['16%','50%','84%'])
+        print('\n[FINAL TABLE]\n')
+        print(output_table[['P','K','phi']])
 
-
-        return (pmag,pmag_inf,pmag_sup)
+        return output_table
 

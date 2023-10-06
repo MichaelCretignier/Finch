@@ -21,7 +21,8 @@ vec.instrument = table['instrument'] # initialisation of the instrument vector
 
 # see the timeseries with : vec.plot() ; plt.legend()
 
-Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(automatic_fit=True)
+Output = vec.fit_magnetic_cycle(automatic_fit=True)
+print(Output) # 16%,84% being the inf & sup uncertainties of the values (50%)
 
 #  Easy ! Isn't it ? :)
 
@@ -32,12 +33,12 @@ Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(automatic_fit=True)
 # There is no garanty for the automatic mode to provide the best result ! 
 # You can choose to add or remove trend manually 
 
-Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(trend_degree=0, automatic_fit=False)
+Output = vec.fit_magnetic_cycle(trend_degree=0, automatic_fit=False)
 
 
 # =============================================================================
 # Predicting current stellar activity level 
 # =============================================================================
 
-Pmag, Pmag_inf, Pmag_sup = vec.fit_magnetic_cycle(automatic_fit=True, predict_today=True)
+Output = vec.fit_magnetic_cycle(automatic_fit=True, predict_today=True)
 
