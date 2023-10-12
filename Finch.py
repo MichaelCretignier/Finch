@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.4.3'
+__version__ = '1.5.1'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -141,7 +141,7 @@ def corner(dataframe, score=None, fig=None):
 
     sub = score>np.percentile(score,33)
     
-    fig.add_subplot(5,5,5)
+    fig.add_subplot(5,5,10)
     warning = 0
     for n,kw in enumerate(['period','K']):
         v = np.median(np.array(dataframe[kw])[sub])
@@ -150,7 +150,7 @@ def corner(dataframe, score=None, fig=None):
         plt.text(-0.9,-0.25*n,tex,ha='left',va='center',fontsize=13) ; plt.xlim(-1,1) ; plt.ylim(-1,1)
         if abs(v)/v_std<3:
             warning = 1
-    plt.text(-0.9,0.9,['Cycle detected','Cycle not detected'][warning],color=['g','r'][warning],fontsize=14)
+    plt.text(-0.9,0.25,['Cycle detected','Cycle not detected'][warning],color=['g','r'][warning],fontsize=14)
     plt.axis('off')
 
     for i,k1 in enumerate(dataframe.keys()):
@@ -201,10 +201,24 @@ class tableXY(object):
         vec.yerr_backup = self.yerr_backup
         vec.instrument = self.instrument
         return vec
+    
+    def order(self):
+        ordering = np.argsort(self.x)
+        self.x = self.x[ordering]
+        self.y = self.y[ordering]
+        self.yerr = self.yerr[ordering]
+        self.yerr_backup = self.yerr_backup[ordering]
+        self.instrument = self.instrument[ordering]
+
+    def interpolate(self,new_grid):
+        newy = interp(self.x,self.y,new_grid)
+        newyerr = interp(self.x,self.yerr,new_grid)
+        return tableXY(new_grid,newy,newyerr)
+        
 
     def plot(self, color=[], ax=None, alpha=1, fmt=['.'],mec=None, yerr_type='active', zorder=10):
-        fmts = np.array(['.','x','^','s'])
-        colors = np.array(['C%.0f'%(i) for i in range(0,6)])
+        fmts = np.array(['.','x','^','s','o','v','.','x'])
+        colors = np.array(['C%.0f'%(i) for i in range(0,80)])
         fmts[0:len(fmt)] = np.array(fmt)
         colors[0:len(color)] = np.array(color)
         for n,ins in enumerate(np.sort(np.unique(self.instrument))):
@@ -264,9 +278,14 @@ class tableXY(object):
             jdb = self.x[mask_ins]
             vrad = self.y[mask_ins]
             vrad_std = self.yerr.copy()[mask_ins]
-
-            vrad_std[vrad_std==0] = np.nanmax(vrad_std[vrad_std!=0]*10)    
             
+            if sum(vrad_std!=0):
+                vrad_std0 = np.nanmax(vrad_std[vrad_std!=0]*10)
+            else:
+                vrad_std0 = mad(vrad)/5 
+            vrad_std[vrad_std==0] = vrad_std0
+            
+
             weights = 1/(vrad_std)**2
 
             groups = ((jdb-db)//1).astype('int')
@@ -317,6 +336,7 @@ class tableXY(object):
         self.bin = tableXY(x,y,yerr)
         self.bin.instrument = instrument
 
+
         x = [] ; y = [] ; yerr = [] ; instrument = []
         for ins in self.instrument_splited.keys():
             x.append(self.instrument_splited[ins].bin.grad.x)
@@ -341,9 +361,10 @@ class tableXY(object):
         self.masked(mask_kept)
         
 
-    def split_seasons(self,Plot=False):
-
-        seasons_t0 = season_length(self.x)[0]
+    def split_seasons(self,Plot=False,seasons_t0=None):
+        
+        if seasons_t0 is None:
+            seasons_t0 = season_length(self.x)[0]
         seasons = compute_obs_season(self.x,seasons_t0)
         
         self.seasons_splited = [self.chunck(seasons[i,0],seasons[i,1]+1) for i in np.arange(len(seasons[:,0]))]
@@ -532,6 +553,8 @@ class tableXY(object):
         if pmax is None:
             pmax = baseline*1.5
         print('[INFO] Pmin = %.0f - Pmax = %.0f'%(pmin,pmax))
+        self.grid_pmin = pmin
+        self.grid_pmax = pmax
         
         period_grid = np.linspace(pmin,pmax,500)
 
@@ -642,10 +665,6 @@ class tableXY(object):
             p_inf = np.min(save['period'][kept])
             p_sup_std = p_sup - p0
             p_inf_std = p0 - p_inf
-            if p_sup == np.max(period_grid):
-                p_sup_std=0
-            if p_inf == np.min(period_grid):
-                p_inf_std=0
 
             self.Pmag_sup = p0+p_sup_std
             self.Pmag_inf = p0-p_inf_std
@@ -714,14 +733,15 @@ class tableXY(object):
         all_model = np.vstack(all_model)
         model_plot = np.vstack(model_plot)
 
-        self.master_model = np.mean(all_model,axis=0)
         Q3 = np.percentile(all_model,75,axis=0)
         Q1 = np.percentile(all_model,25,axis=0)
         IQ = Q3-Q1
         self.env_sup = tableXY(x_val,Q3+1.5*IQ,0*x_val)
         self.env_inf = tableXY(x_val,Q1-1.5*IQ,0*x_val)
+        self.master_model = tableXY(x_val,np.mean(all_model,axis=0),IQ*1.5)
 
-        chi2_final = np.sum((y_val-self.master_model)**2/yerr_val**2)
+
+        chi2_final = np.sum((y_val-self.master_model.y)**2/yerr_val**2)
         self.bic = chi2_final+nb_params*np.log(len(x_val))
         print('[INFO] BIC = ',self.bic)
 
@@ -738,17 +758,17 @@ class tableXY(object):
 
         corner(coeff_likelihood,score=lk_grad,fig=fig)
 
-        if (self.Pmag==self.Pmag_sup)|(self.Pmag==self.Pmag_inf):
+        if (self.Pmag_sup==self.grid_pmax)|(self.Pmag_inf==self.grid_pmin):
             warning=1
 
         for m in minor_instruments:
             offset = np.mean(coeff_likelihood['C_{%s}'%(m)])
             timeseries.y[timeseries.instrument==m] -= offset
 
+        sub = lk_grad>np.percentile(lk_grad,33)
         if ax is not None:
             if values_rejected:
                 timeseries.merge(rejected)
-            sub = lk_grad>np.percentile(lk_grad,33)
             ax.plot(x_interp,np.percentile(model_plot[sub],50,axis=0),color='k',ls='-',lw=2)
             ax.plot(x_interp,np.percentile(model_plot[sub],16,axis=0),color='k',ls='-.',lw=1)
             ax.plot(x_interp,np.percentile(model_plot[sub],84,axis=0),color='k',ls='-.',lw=1)
@@ -757,9 +777,9 @@ class tableXY(object):
             if predict_today:
                 ax.axvline(x=jdb_today,ls=':',color='k',label='today')
                 ax.legend()
-            
+
         Pmag_conservative = (self.Pmag_inf/365.25, self.Pmag/365.25, self.Pmag_sup/365.25)
-        Pmag = (np.percentile(coeff_likelihood['period'],16),np.median(coeff_likelihood['period']),  np.percentile(coeff_likelihood['period'],84))
+        Pmag = (np.percentile(coeff_likelihood.loc[sub,'period'],16),np.median(coeff_likelihood.loc[sub,'period']),  np.percentile(coeff_likelihood.loc[sub,'period'],84))
 
         return warning, Pmag_conservative, Pmag
 
@@ -770,11 +790,11 @@ class tableXY(object):
         trend_degree [int] : polynomial drift
         """
         self.night_stack()
-        self.split_seasons()
         reference = self.copy()
-        #self.split_seasons()
+        seasons_t0 = season_length(self.x)[0]
         self.split_instrument()
         for ins in self.instrument_splited.keys():
+            self.instrument_splited[ins].split_seasons(seasons_t0=seasons_t0)
             self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
             if data_driven_std: #second iteration for uncertainties on slope params
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
@@ -788,24 +808,17 @@ class tableXY(object):
             #bad season value
             mask = rm_outliers(binned,m=5)[0]
             self.bin.masked(mask)
-            if sum(~mask):
-                mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
-                self.masked(mask2)
-                self.seasons_species = self.seasons_species[mask2]
 
         if len(self.bin.y)>=6:
             #bad season value
             mask = self.bin.yerr<=mad(self.bin.y)*10
             self.bin.masked(mask)
-            if sum(~mask):
-                mask2 = ~np.in1d(self.seasons_species,np.where(~mask)[0][0]+1)
-                self.masked(mask2)
-                self.seasons_species = self.seasons_species[mask2]
 
+        self.grad = self.bin.grad
         vec = [self,self.bin]
 
-        def gen_figure():
-            fig = plt.figure(figsize=(18,10))
+        def gen_figure(name=None):
+            fig = plt.figure(name,figsize=(18,10))
             fig.suptitle(fig_title)
             gs = fig.add_gridspec(11, 10)
             plt.subplots_adjust(hspace=0,wspace=0,bottom=0.09,top=[0.95,0.90][int(fig_title!='')],right=0.97,left=0.06)
@@ -815,7 +828,8 @@ class tableXY(object):
 
             return fig,gs,ax2,ax_chi2
 
-        fig,gs,ax,ax_chi = gen_figure()
+        if len(np.unique(vec[int(season_bin)].instrument))>3:
+            offset_instrument = 'yes!'
 
         if automatic_fit:
 
@@ -831,20 +845,36 @@ class tableXY(object):
                     params = np.array([[0,False],[1,False]])
             
             metric = []
+            code = []
+            outputs = []
+            count=0
             for deg, offset in params:
+                fig,gs,ax,ax_chi = gen_figure(name='automatic')
+                code.append('D%.0fO%.0f'%(deg,offset))
                 print('\n[INFO] Testing model : instrument_offset = %.0f + Trend_degree = %.0f'%(offset,deg))
                 dust = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=deg, fmt='o', fig=fig, offset_instrument=offset)
-                metric.append(vec[int(season_bin)].model_metric,)
-                plt.close('all')
-                fig,gs,ax,ax_chi = gen_figure()
+                outputs.append([list(dust[1]),list(dust[2])])
+                metric.append(vec[int(season_bin)].model_metric)
+                plt.close('automatic')
             metric = np.array(metric)
-
             trend_degree = params[np.argmin(metric)][0]
             offset_instrument = params[np.argmin(metric)][1]
+
+            fig,gs,ax,ax_chi = gen_figure()
+            fig.add_subplot(5,5,5)
+            for n,l in enumerate(np.array(outputs)):
+                plt.errorbar(np.array([-0.15,0.15])+n,l[:,1],yerr=[l[:,1]-l[:,0],l[:,2]-l[:,1]],marker='o',ls='')
+            plt.ylabel('Pmag [years]')
+            plt_ax = plt.gca() ; ylim = plt_ax.get_ylim()
+            if ylim[1]>vec[int(season_bin)].grid_pmax/365.25:
+                plt.axhline(y=vec[int(season_bin)].grid_pmax/365.25,lw=1,ls='-.',alpha=0.3,color='k')
+            plt.xticks(np.arange(len(code)),code)
 
             print('\n===========')
             print('[AUTOMATIC] Model selected : instrument_offset = %.0f + Trend_degree = %.0f'%(offset_instrument,trend_degree))
             print('===========\n')
+        else:
+            fig,gs,ax,ax_chi = gen_figure()
 
         offset_instrument = {'yes':True,'yes!':True,'no':False, 'no!':False, True:True, False:False}[offset_instrument]
 
@@ -867,11 +897,11 @@ class tableXY(object):
             ax.set_ylabel(self.proxy_name)
 
         print('\n==============')
-        if pmag_sup==pmag:
+        if pmag_sup==vec[int(season_bin)].grid_pmax/365.25:
             print('[FINAL REPORT] Pmag > %.2f [%.2f - ???]'%(pmag_inf,pmag_inf))
             pmag = pmag_inf
             pmag_sup = np.nan
-        elif pmag_inf==pmag:
+        elif pmag_inf==vec[int(season_bin)].grid_pmin:
             print('[FINAL REPORT] Pmag < %.2f [??? - %.2f]'%(pmag_sup,pmag_sup))
             pmag = pmag_sup
             pmag_inf = np.nan
