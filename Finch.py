@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.5.1'
+__version__ = '1.5.2'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -672,7 +672,7 @@ class tableXY(object):
             ax_chi.axhline(y=-0.5*np.log(sup),ls=':',color='k')
             ax_chi.axvline(x=best_fit_period/365.25,ls=':')
             ax_chi.set_title(label=r'$P_{mag}=%.0f^{+%.0f}_{-%.0f}$ days | $P_{mag}=%.2f^{+%.2f}_{-%.2f}$ years'%(p0,p_sup_std,p_inf_std,p0/365.25,p_sup_std/365.25,p_inf_std/365.25))
-            ax_chi.set_xlabel('Pmag [days]')
+            ax_chi.set_xlabel('Pmag [years]')
             ax_chi.set_ylabel(r'Likelihood')
 
         #likelihood plot
@@ -784,7 +784,7 @@ class tableXY(object):
         return warning, Pmag_conservative, Pmag
 
 
-    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict_today=False):
+    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict_today=False, previous_period_estimate=[[None,None,None,'source']]):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
@@ -862,12 +862,20 @@ class tableXY(object):
 
             fig,gs,ax,ax_chi = gen_figure()
             fig.add_subplot(5,5,5)
+
             for n,l in enumerate(np.array(outputs)):
                 plt.errorbar(np.array([-0.15,0.15])+n,l[:,1],yerr=[l[:,1]-l[:,0],l[:,2]-l[:,1]],marker='o',ls='')
             plt.ylabel('Pmag [years]')
             plt_ax = plt.gca() ; ylim = plt_ax.get_ylim()
             if ylim[1]>vec[int(season_bin)].grid_pmax/365.25:
                 plt.axhline(y=vec[int(season_bin)].grid_pmax/365.25,lw=1,ls='-.',alpha=0.3,color='k')
+
+            if previous_period_estimate[0][0] is not None:
+                for n2,l in enumerate(np.array(previous_period_estimate)):
+                    print(l)
+                    plt.errorbar([n+n2+1],[float(l[0])],yerr=[[abs(float(l[1]))],[abs(float(l[2]))]],marker='o',ls='',color='k')
+                    code.append(l[3])
+
             plt.xticks(np.arange(len(code)),code)
 
             print('\n===========')
