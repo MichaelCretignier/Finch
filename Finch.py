@@ -7,14 +7,17 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.5.2'
+__version__ = '1.5.4'
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
     j0 = np.min(new_array)+(period-np.max(new_array))
     diff = np.diff(new_array)
-    if np.max(diff)>j0:
-        return 0.5*(new_array[np.argmax(diff)]+new_array[np.argmax(diff)+1])
+    if len(diff):
+        if np.max(diff)>j0:
+            return 0.5*(new_array[np.argmax(diff)]+new_array[np.argmax(diff)+1])
+        else:
+            return 0
     else:
         return 0
 
@@ -717,8 +720,8 @@ class tableXY(object):
                 base_for_grad = create_base(x_grad-mean_x, z_grad, period, trend_degree,ins_offset=False)
                 model2 = np.dot(coeff[mask_coeff].T,base_for_grad)
                 model_grad = np.diff(model2,axis=1)[:,0::2]
-                residus_grad = self.grad.y - model_grad         
-                chi2_grad = np.sum(residus_grad**2/self.grad.yerr**2,axis=1)
+                residus_grad = self.grad.y - model_grad
+                chi2_grad = np.nansum(residus_grad**2/self.grad.yerr**2,axis=1)
                 all_chi2_grad.append(chi2_grad)
 
         coeff_likelihood = np.hstack(coeff_likelihood)
@@ -765,7 +768,7 @@ class tableXY(object):
             offset = np.mean(coeff_likelihood['C_{%s}'%(m)])
             timeseries.y[timeseries.instrument==m] -= offset
 
-        sub = lk_grad>np.percentile(lk_grad,33)
+        sub = lk_grad>np.nanpercentile(lk_grad,33)
         if ax is not None:
             if values_rejected:
                 timeseries.merge(rejected)
