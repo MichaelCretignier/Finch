@@ -1,4 +1,8 @@
-#Created by Michael Cretignier 31.09.2023
+"""
+@author: Cretignier Michael 
+@university: University of Geneva
+@date: 31.09.2023
+"""
 
 import datetime
 
@@ -7,181 +11,9 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-__version__ = '1.5.4'
+import Finch_functions as ff
 
-def get_phase(array,period):
-    new_array = np.sort((array%period))
-    j0 = np.min(new_array)+(period-np.max(new_array))
-    diff = np.diff(new_array)
-    if len(diff):
-        if np.max(diff)>j0:
-            return 0.5*(new_array[np.argmax(diff)]+new_array[np.argmax(diff)+1])
-        else:
-            return 0
-    else:
-        return 0
-
-def return_branching_phase(array):
-    array1 = array%360
-    array2 = (array1+180)%360-180
-    if np.std(array1)<=np.std(array2):
-        return array1
-    else:
-        return array2
-
-
-def match_nearest(array1, array2,random=True):
-    """return a table [idx1,idx2,num1,num2,distance] matching the closest element from two arrays. Remark : algorithm very slow by conception if the arrays are too large."""
-    if type(array1)!=np.ndarray:
-        array1 = np.array(array1)
-    if type(array2)!=np.ndarray:
-        array2 = np.array(array2)    
-    if not (np.product(~np.isnan(array1))*np.product(~np.isnan(array2))):
-        print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
-    index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
-    array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
-    liste1 = np.arange(len(array1))[:,np.newaxis]*np.hstack([np.ones(len(array1))[:,np.newaxis],np.zeros(len(array1))[:,np.newaxis]])
-    liste2 = np.arange(len(array2))[:,np.newaxis]*np.hstack([np.ones(len(array2))[:,np.newaxis],np.zeros(len(array2))[:,np.newaxis]])
-    liste1 = liste1.astype('int') ; liste2 = liste2.astype('int')
-    
-    #ensure that the probability for two close value to be the same is null
-    if len(array1)>1:
-        dmin = np.diff(np.sort(array1)).min()
-    else:
-        dmin=0
-    if len(array2)>1:
-        dmin2 = np.diff(np.sort(array2)).min()
-    else:
-        dmin2=0
-    array1_r = array1 + int(random)*0.001*dmin*np.random.randn(len(array1))
-    array2_r = array2 + int(random)*0.001*dmin2*np.random.randn(len(array2))
-    #match nearest
-    m = abs(array2_r-array1_r[:,np.newaxis])
-    arg1 = np.argmin(m,axis=0)
-    arg2 = np.argmin(m,axis=1)
-    mask = (np.arange(len(arg1)) == arg2[arg1])
-    liste_idx1 = arg1[mask]
-    liste_idx2 = arg2[arg1[mask]]
-    array1_k = array1[liste_idx1]
-    array2_k = array2[liste_idx2]
-
-    liste_idx1 = index1[liste_idx1]
-    liste_idx2 = index2[liste_idx2] 
-    
-    mat = np.hstack([liste_idx1[:,np.newaxis],liste_idx2[:,np.newaxis],
-                        array1_k[:,np.newaxis],array2_k[:,np.newaxis],(array1_k-array2_k)[:,np.newaxis]]) 
-        
-    return mat
-
-
-def mad(array):
-    step = abs(array-np.nanmedian(array))
-    return np.nanmedian(step)*1.48
-
-def season_length(jdb):
-    phase = get_phase(jdb,365.25)
-    yarara_t0 = phase+np.min((jdb-phase)%365.25)+365.25*((jdb-phase)[0]//365.25)
-    yarara_t1 = phase+np.max((jdb-phase)%365.25)+365.25*((jdb-phase)[0]//365.25)
-    return yarara_t0, yarara_t1
-
-def compute_obs_season(time,t0):
-    s_num = (time-t0)//365.25
-    s_num-= (np.min(s_num)-1)
-    loc = []
-    for s in np.sort(np.unique(s_num)):
-        loc.append([np.where(s_num==s)[0][0],np.where(s_num==s)[0][-1]])
-    borders =  np.array(loc)
-    return borders
-
-def rm_outliers(array, m=1.5):
-    array[array==np.inf] = np.nan    
-    interquartile = np.nanpercentile(array, 75, axis=0) - np.nanpercentile(array, 25, axis=0)
-    inf = np.nanpercentile(array, 25, axis=0)-m*interquartile
-    sup = np.nanpercentile(array, 75, axis=0)+m*interquartile    
-    mask = (array >= inf)&(array <= sup)
-
-    return mask,  array[mask], sup, inf        
-
-def interp(x, y, new_x):
-    new_y = interp1d(x, y, kind='linear', bounds_error=False, fill_value='extrapolate')(new_x)
-    return new_y
-
-def format_name(val,k1):
-    format_nb = {'period':'%.2f','K':'%.3f','phi':'%.1f','a':'%.3f'}
-    if k1 in format_nb.keys():
-        return format_nb[k1]%(val)
-    else:
-        return '%.3f'%(val)
-
-def today():
-    today = datetime.datetime.now().isoformat()
-    today = float(today[0:4])*365.25+30.5*float(today[5:7])+float(today[8:10])
-    today = today*60221.0478530759/739208.75
-    return today
-
-def corner(dataframe, score=None, fig=None):
-    nb = len(dataframe.keys())
-    offset=nb
-    if fig is None:
-        fig = plt.figure(figsize=(10,10))
-        gs_corner = fig.add_gridspec(nb, nb)
-        plt.subplots_adjust(hspace=0,wspace=0)
-        offset=0
-    else:
-        gs_corner = fig.add_gridspec(nb, 2*nb)
-    mean_df = dataframe.mean()
-    std_df = dataframe.std()
-    z = (dataframe-mean_df)/std_df
-
-    if score is None:
-        score = np.ones(len(dataframe))
-        score[0] = 0
-        vmin = 0
-        vmax = 1
-    else:
-        vmin = np.percentile(score,5)
-        vmax = np.percentile(score,95)
-
-    sub = score>np.percentile(score,33)
-    
-    fig.add_subplot(5,5,10)
-    warning = 0
-    for n,kw in enumerate(['period','K']):
-        v = np.median(np.array(dataframe[kw])[sub])
-        v_std = np.std(np.array(dataframe[kw])[sub])
-        tex = [r'$P_{mag}=$%.2f $\pm$ %.2f years'%(v,v_std),r'$K=$%.4f $\pm$ %.4f'%(v,v_std)][n]
-        plt.text(-0.9,-0.25*n,tex,ha='left',va='center',fontsize=13) ; plt.xlim(-1,1) ; plt.ylim(-1,1)
-        if abs(v)/v_std<3:
-            warning = 1
-    plt.text(-0.9,0.25,['Cycle detected','Cycle not detected'][warning],color=['g','r'][warning],fontsize=14)
-    plt.axis('off')
-
-    for i,k1 in enumerate(dataframe.keys()):
-        for j,k2 in enumerate(dataframe.keys()):
-            if i==j:
-                fig.add_subplot(gs_corner[i,offset+j])
-                plt.tick_params(direction='in',top=True,right=True)
-                plt.hist(z[k1],bins=15,histtype='step',color='gray',orientation=['vertical','horizontal'][int(i==nb-1)])
-                plt.hist(z[k1][sub],bins=15,histtype='step',color='k',orientation=['vertical','horizontal'][int(i==nb-1)])
-                plt.tick_params(labelbottom=False)
-                plt.title(r'$\frac{%s-%s}{%s}$'%(k1,format_name(mean_df[k1],k1),format_name(std_df[k1],k1)),fontsize=14)
-            elif i>j:
-                fig.add_subplot(gs_corner[i,offset+j])
-                plt.tick_params(direction='in',top=True,right=True)
-                plt.scatter(z[k2],z[k1],alpha=0.3,c=score,marker='.',cmap='Greys',vmin=vmin,vmax=vmax)
-
-            if i==nb-1:
-                plt.tick_params(labelleft=False)
-            else:
-                plt.tick_params(labelbottom=False)
-
-            if j!=0:
-                plt.tick_params(labelleft=False)
-                
-            else:
-                plt.tick_params(labelleft=True)
-                plt.ylabel(r'$\frac{%s-%s}{%s}$'%(k1,format_name(mean_df[k1],k1),format_name(std_df[k1],k1)))
-
+__version__ = '1.7.0'
 
 class tableXY(object):
 
@@ -192,17 +24,19 @@ class tableXY(object):
         self.yerr = np.array(yerr)
         self.yerr_backup = np.array(yerr)
         self.proxy_name = proxy_name
-        
+        self.mask_flag = np.zeros(len(self.x)).astype('bool')
+
         if len(x)!=len(y):
             print('X et Y have no the same lenght')
         
         self.instrument = np.array(['unknown']*len(self.x))
-
+        self.reference = np.array(['unknown']*len(self.x))
 
     def copy(self):
         vec = tableXY(self.x,self.y,self.yerr)
         vec.yerr_backup = self.yerr_backup
         vec.instrument = self.instrument
+        vec.mask_flag = self.mask_flag
         return vec
     
     def order(self):
@@ -212,22 +46,25 @@ class tableXY(object):
         self.yerr = self.yerr[ordering]
         self.yerr_backup = self.yerr_backup[ordering]
         self.instrument = self.instrument[ordering]
+        self.mask_flag = self.mask_flag[ordering]
+        self.reference = self.reference[ordering]
 
-    def interpolate(self,new_grid):
-        newy = interp(self.x,self.y,new_grid)
-        newyerr = interp(self.x,self.yerr,new_grid)
+    def interpolate(self,new_grid,kind='linear'):
+        newy = ff.interp(self.x, self.y, new_grid, kind=kind)
+        newyerr = ff.interp(self.x, self.yerr, new_grid, kind=kind)
         return tableXY(new_grid,newy,newyerr)
         
 
-    def plot(self, color=[], ax=None, alpha=1, fmt=['.'],mec=None, yerr_type='active', zorder=10):
-        fmts = np.array(['.','x','^','s','o','v','.','x'])
+    def plot(self, color=[], ax=None, alpha=1, fmt='.',mec=None, yerr_type='active', zorder=10):
         colors = np.array(['C%.0f'%(i) for i in range(0,80)])
-        fmts[0:len(fmt)] = np.array(fmt)
         colors[0:len(color)] = np.array(color)
+        fmts = ['.','s','o','^','v'] ; fmts[0] = fmt
         for n,ins in enumerate(np.sort(np.unique(self.instrument))):
             mask_instrument = self.instrument==ins
+            mask_flag = self.mask_flag[mask_instrument]
             x = self.x[mask_instrument]
             y = self.y[mask_instrument]
+            sources = self.reference[mask_instrument]
             only_nan = (len(y)==sum(y!=y))
             
             if yerr_type=='active':
@@ -237,10 +74,17 @@ class tableXY(object):
             
             if not only_nan:
                 if ax is None:
-                    plt.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
+                    if np.sum(~mask_flag):
+                        for i,s in enumerate(np.unique(sources)):
+                            plt.errorbar(x[(~mask_flag)&(sources==s)],y[(~mask_flag)&(sources==s)],yerr[(~mask_flag)&(sources==s)],color=colors[n],capsize=0,fmt=fmts[i],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s (%s)'%(ins,s))
+                    if np.sum(mask_flag):
+                        plt.errorbar(x[mask_flag],y[mask_flag],yerr[mask_flag],color=colors[n],capsize=0,fmt='x',alpha=0.2,ls='',mec=mec,zorder=zorder)
                 else:
-                    ax.errorbar(x,y,yerr,color=colors[n],capsize=0,fmt=fmts[n],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s'%(ins))
-        
+                    if np.sum(~mask_flag):
+                        for i,s in enumerate(np.unique(sources)):
+                            ax.errorbar(x[(~mask_flag)&(sources==s)],y[(~mask_flag)&(sources==s)],yerr[(~mask_flag)&(sources==s)],color=colors[n],capsize=0,fmt=fmts[i],alpha=alpha,ls='',mec=mec,zorder=zorder,label='%s (%s)'%(ins,s))
+                    if np.sum(mask_flag):
+                        plt.errorbar(x[mask_flag],y[mask_flag],yerr[mask_flag],color=colors[n],capsize=0,fmt='x',alpha=0.2,ls='',mec=mec,zorder=zorder)
             
     def masked(self,mask,replace=True):
         x = self.x[mask]
@@ -248,16 +92,23 @@ class tableXY(object):
         yerr = self.yerr[mask]
         yerr_backup = self.yerr_backup[mask]
         ins = self.instrument[mask]
+        mask_flag = self.mask_flag[mask]
+        source = self.reference[mask]
+
         if replace:
             self.x = x
             self.y = y
             self.yerr = yerr
             self.yerr_backup = yerr_backup
             self.instrument = ins
+            self.mask_flag = mask_flag
+            self.reference = source
         else:
             vec = tableXY(x,y,yerr)
             vec.instrument = ins
             vec.yerr_backup = yerr_backup
+            vec.mask_flag = mask_flag
+            vec.reference = source
             return vec
 
 
@@ -267,28 +118,31 @@ class tableXY(object):
         chunk = tableXY(self.x[idx1:idx2],self.y[idx1:idx2],self.yerr[idx1:idx2])
         chunk.yerr_backup = self.yerr_backup[idx1:idx2]
         chunk.instrument = self.instrument[idx1:idx2]
+        chunk.mask_flag = self.mask_flag[idx1:idx2]
         return chunk
 
-
     def night_stack(self,db=0):
-
         x = []
         y = []
         yerr = []
         instrument = []
-        for ins in np.sort(np.unique(self.instrument)):
-            mask_ins = self.instrument==ins
+        reference = []
+
+        rejected = self.masked(self.mask_flag,replace=False)
+
+        for ins in np.sort(np.unique(self.instrument[~self.mask_flag])):
+            mask_ins = (self.instrument==ins)&(~self.mask_flag)
             jdb = self.x[mask_ins]
             vrad = self.y[mask_ins]
             vrad_std = self.yerr.copy()[mask_ins]
+            ref = np.unique(self.reference[mask_ins])[0]
             
             if sum(vrad_std!=0):
                 vrad_std0 = np.nanmax(vrad_std[vrad_std!=0]*10)
             else:
-                vrad_std0 = mad(vrad)/5 
+                vrad_std0 = ff.mad(vrad)/5 
             vrad_std[vrad_std==0] = vrad_std0
             
-
             weights = 1/(vrad_std)**2
 
             groups = ((jdb-db)//1).astype('int')
@@ -309,12 +163,18 @@ class tableXY(object):
             y.append(np.array(mean_vrad))
             yerr.append(np.array(mean_svrad))
             instrument.append(np.array([ins]*len(mean_jdb)))
+            reference.append(np.array([ref]*len(mean_jdb)))
 
         self.x = np.hstack(x)
         self.y = np.hstack(y)
         self.yerr = np.hstack(yerr)
         self.yerr_backup = np.hstack(yerr)
         self.instrument = np.hstack(instrument)
+        self.reference = np.hstack(reference)
+        self.mask_flag = np.zeros(len(self.x)).astype('bool')
+
+        self.merge(rejected)
+        self.order()
 
     def split_instrument(self):
         self.instrument_splited = {}
@@ -326,18 +186,43 @@ class tableXY(object):
         self.x = np.hstack([self.x,tableXY2.x])
         self.y = np.hstack([self.y,tableXY2.y])
         self.yerr = np.hstack([self.yerr,tableXY2.yerr])
+        self.yerr_backup = np.hstack([self.yerr_backup,tableXY2.yerr_backup])
         self.instrument = np.hstack([self.instrument,tableXY2.instrument])
+        self.mask_flag = np.hstack([self.mask_flag,tableXY2.mask_flag])
+        self.reference = np.hstack([self.reference,tableXY2.reference])
+
+    def merge_sources(self):
+        for ins in np.unique(self.instrument):
+            mask_ins = self.instrument==ins
+            v1 = self.masked(mask_ins,replace=False)
+            sources = np.unique(v1.reference)
+            self.masked(~mask_ins,replace=True)
+            if len(sources)>1:
+                times = [v1.x[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
+                values = [v1.y[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
+                values_std = [v1.yerr[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
+                merged_time, merged, merged_std, src_order = ff.merge_sources(times, values, values_std, max_diff=1)
+                print('References for instrument %s = '%(ins),sources[src_order])
+                v1 = tableXY(merged_time, merged, merged_std)
+                v1.instrument = [ins]*len(v1.x)
+                v1.reference = [' & '.join(list(sources))]*len(v1.x)
+            
+            self.merge(v1)
+            self.order()
 
     def merge_instrument(self):
-        x = [] ; y = [] ; yerr = [] ; instrument = []
+        x = [] ; y = [] ; yerr = [] ; instrument = [] ; source = []
         for ins in self.instrument_splited.keys():
             x.append(self.instrument_splited[ins].bin.x)
             y.append(self.instrument_splited[ins].bin.y)
             yerr.append(self.instrument_splited[ins].bin.yerr)
             instrument.append([ins]*len(self.instrument_splited[ins].bin.x))
-        x = np.hstack(x) ; y = np.hstack(y) ; yerr = np.hstack(yerr) ; instrument = np.hstack(instrument)
+            source.append(self.instrument_splited[ins].bin.reference)
+
+        x = np.hstack(x) ; y = np.hstack(y) ; yerr = np.hstack(yerr) ; instrument = np.hstack(instrument) ; source = np.hstack(source)
         self.bin = tableXY(x,y,yerr)
         self.bin.instrument = instrument
+        self.bin.reference = source
 
 
         x = [] ; y = [] ; yerr = [] ; instrument = []
@@ -351,24 +236,73 @@ class tableXY(object):
         self.bin.grad.instrument = instrument
 
     def rm_seasons_outliers(self,m=3):
-        seasons_t0 = season_length(self.x)[0]
-        seasons = compute_obs_season(self.x,seasons_t0)
+        seasons_t0 = ff.season_length(self.x)[0]
+        seasons = ff.compute_obs_season(self.x,seasons_t0)
         
         mask_kept = np.ones(len(self.x)).astype('bool')
         for i in np.arange(len(seasons[:,0])):
             if (seasons[i,1]-seasons[i,0])>10:
                 sub = self.y[seasons[i,0]:seasons[i,1]+1]
-                mask = abs(sub-np.median(sub))<=mad(sub)*m
+                mask = abs(sub-np.median(sub))<=ff.mad(sub)*m
                 mask_kept[seasons[i,0]:seasons[i,1]+1] = mask
+        self.mask_flag = ~mask_kept
+        #self.masked(mask_kept)
+
+    def set_ins_uncertainties(self):
         
-        self.masked(mask_kept)
-        
+        #instrumental_noise obtained from HD1461,HD1388,HD23249,HD10700,HD90156 
+        ins_smw_std = {
+            'HARPS03':{'DACE':0.0012,'Yu+23':0.0014,'YARARA':0.0012},
+            'HARPS15':{'DACE':0.0012,'Yu+23':0.0012,'YARARA':0.0012},
+            'HARPN':  {'DACE':0.0012,'YARARA':0.0012},
+            'HKP-1':  {'Baum+22':0.0043,'Radick+18':0.0043},
+            'HKP-2':  {'Baum+22':0.0028,'Radick+18':0.0034},
+            'HIRES-1':{'Baum+22':0.0015,'Butler+17':0.0090,'Isaacson+10':0.0040,'Wright+04':0.0015},
+            'HIRES-2':{'Baum+22':0.0015,'Butler+17':0.0050,'Isaacson+10':0.0050},
+            }
+
+        for i in np.unique(self.instrument):
+            mask_ins = self.instrument==i
+            for s in np.unique(self.reference[mask_ins]):
+                mask_source = self.reference==s
+                try:
+                    value = ins_smw_std[i][s]
+                    self.yerr[mask_ins&mask_source] = np.sqrt(self.yerr[mask_ins&mask_source]**2+value**2) 
+                    print('[INFO] Uncertainties updated to a minimum jitter of %.4f for instrument = %s (%s)'%(value,i,s))
+                except:
+                    print('[WARNING] instrument = %s (%s) not in the default list of calibrated uncertainties'%(i,s))
+
+    def prune_obs_model(self,zmin=4):
+        pmag = self.out_pmag
+        model = self.out_model_smooth
+        model = model.interpolate(self.x)
+        for ins in np.unique(self.instrument):
+            mask_ins = (self.instrument==ins)&(~self.mask_flag)
+            xx = self.x[mask_ins]
+            yy = self.y[mask_ins]
+            residu = (yy-model.y[mask_ins])
+            deg = int(np.round(5*(np.max(xx)-np.min(xx))/(pmag*365.25),0))
+            deg = np.min([deg,6])
+            residu = residu - np.polyval(np.polyfit(xx,residu,deg),xx)
+            residu_norm = residu/model.yerr[mask_ins]
+            #plt.figure() ; plt.subplot(2,1,1) ; plt.scatter(xx,residu)  ; plt.subplot(2,1,2) ; plt.scatter(xx,residu_norm)
+            new_yerr = np.std(residu[abs(residu_norm)<zmin])
+            new_yerr = new_yerr**2-np.median(self.yerr[mask_ins])**2
+            if new_yerr>0:
+                new_yerr = np.sqrt(new_yerr)
+            else:
+                new_yerr = 0
+            print('[INFO] Uncertainties updated to %.4f for instrument = %s '%(np.median(np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)),ins))
+            self.yerr[mask_ins] = np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)
+            index = np.arange(len(self.x))[mask_ins][abs(residu_norm)>zmin]
+            self.mask_flag[index] = True
+
 
     def split_seasons(self,Plot=False,seasons_t0=None):
         
         if seasons_t0 is None:
-            seasons_t0 = season_length(self.x)[0]
-        seasons = compute_obs_season(self.x,seasons_t0)
+            seasons_t0 = ff.season_length(self.x)[0]
+        seasons = ff.compute_obs_season(self.x,seasons_t0)
         
         self.seasons_splited = [self.chunck(seasons[i,0],seasons[i,1]+1) for i in np.arange(len(seasons[:,0]))]
 
@@ -426,7 +360,7 @@ class tableXY(object):
         self.slope_std/=x_std
 
     def match_proxies(self,tableXY_2):
-        match = match_nearest(self.x,tableXY_2.x)
+        match = ff.match_nearest(self.x,tableXY_2.x)
         mask1 = np.in1d(np.arange(len(self.x)),match[:,0].astype('int'))
         mask2 = np.in1d(np.arange(len(tableXY_2.x)),match[:,1].astype('int'))
         sub1 = self.masked(mask1,replace=False)
@@ -482,6 +416,7 @@ class tableXY(object):
 
         self.bin = tableXY(new_x,new_y,new_yerr)
         self.bin.grad = tableXY(new_gradx,new_grady,new_gradyerr)
+        self.bin.reference = [np.unique(self.reference)[0]]*len(self.bin.x)
 
         if data_driven_std:
             self.yerr_backup = self.yerr.copy()
@@ -511,11 +446,14 @@ class tableXY(object):
         return coeff, sample
 
 
-    def fit_sinus(self, pmin=1000, pmax=None, perm=1000, trend_degree=1, ax=None, ax_chi=None, fmt='.', fig=None, offset_instrument=False, predict_today=False):
+    def fit_sinus(self, pmin=1000, pmax=None, perm=1000, trend_degree=1, ax=None, ax_chi=None, fmt='.', fig=None, offset_instrument=False, predict=False):
         
         jdb_today = -1
-        if predict_today:
-            jdb_today = today()
+        if type(predict)==str:
+            if predict=='today':
+                jdb_today = ff.today()
+        elif type(predict)!=bool:
+            jdb_today = predict
 
         warning = 0
 
@@ -527,12 +465,14 @@ class tableXY(object):
             if sum(count>1):
                 minor_instruments = np.hstack(count[count>1].keys())
                 if len(minor_instruments):
-                    print('[INFO] Minor instrument detected : ',minor_instruments,' vs. Major instrument : %s'%(major_instrument))
+                    print('[INFO] Major instrument detected : %s'%(major_instrument))
+                    print('[INFO] Minor instrument detected : ',minor_instruments)
 
         x_val = self.x.copy()
         y_val = self.y.copy()
         yerr_val = self.yerr.copy()
         ins_val = self.instrument.copy()
+        src_val = self.reference.copy()
 
         values_rejected = 0
         if offset_instrument: #rm single season instrument if free offset model
@@ -548,13 +488,17 @@ class tableXY(object):
             y_val = y_val[kept]
             yerr_val = yerr_val[kept]
             ins_val = ins_val[kept]
+            src_val = src_val[kept]
             
         timeseries = tableXY(x_val,y_val,yerr_val)
         timeseries.instrument = ins_val
+        timeseries.reference = src_val
 
         baseline = int(np.max(x_val) - np.min(x_val))
         if pmax is None:
             pmax = baseline*1.5
+        pmax = np.min([pmax,30*365.25]) 
+
         print('[INFO] Pmin = %.0f - Pmax = %.0f'%(pmin,pmax))
         self.grid_pmin = pmin
         self.grid_pmax = pmax
@@ -661,7 +605,7 @@ class tableXY(object):
             ax_chi.plot(save['period']/365.25,med_loglk+std_loglk,color='k',alpha=0.6,ls='-.')
             ax_chi.plot(save['period']/365.25,med_loglk-std_loglk,color='k',alpha=0.6,ls='-.')
             ax_chi.fill_between(save['period']/365.25, med_loglk-std_loglk, med_loglk+std_loglk,alpha=0.2,color='k')
-            ax_chi.legend()
+            ax_chi.legend(loc=2)
 
             p0 = best_fit_period
             p_sup = np.max(save['period'][kept])
@@ -683,7 +627,7 @@ class tableXY(object):
         coeff_likelihood = []
         all_model = []
         period_interp = np.linspace(np.min(period_grid[kept]),np.max(period_grid[kept]),100)
-        density_interp = interp(period_grid, density, period_interp)
+        density_interp = ff.interp(period_grid, density, period_interp)
         period_interp = period_interp[density_interp!=0]
         density_interp = density_interp[density_interp!=0]
         density_interp /= np.sum(density_interp)
@@ -705,9 +649,10 @@ class tableXY(object):
             mask_coeff = np.array([len(c.split('_'))==1 for c in name0[3:]])
             if ax is not None:
                 xmax = np.max(self.x)+0.5*baseline
-                if jdb_today > np.max(self.x)+0.5*baseline:
+                xmin = np.min(self.x)-0.5*baseline
+                if jdb_today > xmax:
                     xmax = jdb_today+365
-                x_interp = np.linspace(np.min(self.x)-0.5*baseline,xmax,300)
+                x_interp = np.linspace(xmin,xmax,300)
                 base_vec = create_base(x_interp-mean_x,(x_interp-mean_x)/x_std,period,trend_degree,ins_offset=False)
                 model = np.dot(coeff[mask_coeff].T,base_vec)
                 ax.plot(x_interp,model.T[:,::1],alpha=0.01,color='k',zorder=1)  
@@ -741,10 +686,13 @@ class tableXY(object):
         IQ = Q3-Q1
         self.env_sup = tableXY(x_val,Q3+1.5*IQ,0*x_val)
         self.env_inf = tableXY(x_val,Q1-1.5*IQ,0*x_val)
-        self.master_model = tableXY(x_val,np.mean(all_model,axis=0),IQ*1.5)
+        self.model_master = tableXY(x_val,np.mean(all_model,axis=0),IQ*1.5)
+        med_slope = 0
+        if 'b' in coeff_likelihood.keys():
+            med_slope = np.median(coeff_likelihood['b'])
+        self.model_drift = tableXY(x_val,(x_val-mean_x)/x_std*med_slope,0*x_val)
 
-
-        chi2_final = np.sum((y_val-self.master_model.y)**2/yerr_val**2)
+        chi2_final = np.sum((y_val-self.model_master.y)**2/yerr_val**2)
         self.bic = chi2_final+nb_params*np.log(len(x_val))
         print('[INFO] BIC = ',self.bic)
 
@@ -755,11 +703,11 @@ class tableXY(object):
 
         phi_shift = 360/np.median(coeff_likelihood['period']*365.25)*(mean_x-60000) #reference date - 2,400,000 for the phase shift definition
         coeff_likelihood['phi'] -= (phi_shift%360)
-        coeff_likelihood['phi'] = return_branching_phase(coeff_likelihood['phi'])
+        coeff_likelihood['phi'] = ff.return_branching_phase(coeff_likelihood['phi'])
         
         self.mcmc_table = coeff_likelihood
 
-        corner(coeff_likelihood,score=lk_grad,fig=fig)
+        converged = ff.corner(coeff_likelihood,score=lk_grad,fig=fig)
 
         if (self.Pmag_sup==self.grid_pmax)|(self.Pmag_inf==self.grid_pmin):
             warning=1
@@ -772,29 +720,285 @@ class tableXY(object):
         if ax is not None:
             if values_rejected:
                 timeseries.merge(rejected)
+            iq = np.percentile(model_plot[sub],75,axis=0) - np.percentile(model_plot[sub],25,axis=0)
             ax.plot(x_interp,np.percentile(model_plot[sub],50,axis=0),color='k',ls='-',lw=2)
             ax.plot(x_interp,np.percentile(model_plot[sub],16,axis=0),color='k',ls='-.',lw=1)
             ax.plot(x_interp,np.percentile(model_plot[sub],84,axis=0),color='k',ls='-.',lw=1)
-            timeseries.plot(ax=ax,fmt=['o']*(len(np.unique(timeseries.instrument))),mec='k')
+            ax.plot(x_interp,np.percentile(model_plot[sub],50,axis=0)+1.5*iq,color='k',ls=':',lw=1,alpha=0.5)
+            ax.plot(x_interp,np.percentile(model_plot[sub],50,axis=0)-1.5*iq,color='k',ls=':',lw=1,alpha=0.5)
+            timeseries.plot(ax=ax,fmt='o',mec='k')
             ax.set_title('Degree detrend = %.0f | Offset instrumental = %.0f' %(trend_degree,offset_instrument))
-            if predict_today:
+            if jdb_today>0:
                 ax.axvline(x=jdb_today,ls=':',color='k',label='today')
-                ax.legend()
+                ax.legend(loc=3)
+            
+            self.model_smooth = tableXY(
+                x_interp,
+                np.percentile(model_plot[sub],50,axis=0),
+                2*iq)
 
         Pmag_conservative = (self.Pmag_inf/365.25, self.Pmag/365.25, self.Pmag_sup/365.25)
         Pmag = (np.percentile(coeff_likelihood.loc[sub,'period'],16),np.median(coeff_likelihood.loc[sub,'period']),  np.percentile(coeff_likelihood.loc[sub,'period'],84))
 
-        return warning, Pmag_conservative, Pmag
+        return warning, converged, Pmag_conservative, Pmag
 
+    def fit_cycles_extrema(self,minima,maxima,pmag,range_ratio=0.40,Plot=True):
+        minima2 = []
+        for mini in minima:
+            m = mini[0]
+            mask = (self.x>(m-365*pmag*range_ratio))&(self.x<(m+365*pmag*range_ratio))
+            sub = self.masked(mask,replace=False)
+            if len(sub.x)>3:
+                sub.order()
+                sub.x-=m
+                base = np.array([sub.x**i for i in range(0,3)])
+                coeff,dust = sub.fit_base(base)
+                if Plot:
+                    xplot = np.linspace(np.min(sub.x),np.max(sub.x),20)
+                    curves = np.dot(np.array([xplot**i for i in range(0,3)]).T,coeff)
+                    plt.plot(xplot+m,curves,color='k',alpha=0.01)
+                coeff = coeff[:,coeff[2]>0]
+                centers = -coeff[1]/(2*coeff[2])
+                center = np.median(centers)
+                sign_para = np.median(coeff[2])/np.std(coeff[2])
+                summits = np.sum(np.array([centers**i for i in range(0,3)])*coeff,axis=0)
+                if (sign_para>1)&(abs(center)<np.max(abs(sub.x))):
+                    minima2.append([m+center,ff.mad(centers),np.median(summits),ff.mad(summits)])
+                    #plt.scatter(centers,summits,alpha=0.1)
+                    #plt.scatter(center,np.median(summits),color='k',marker='x')
+                else:
+                    minima2.append(mini)
+            else:
+                minima2.append(mini)
+        minima2 = np.array(minima2)
 
-    def fit_magnetic_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict_today=False, previous_period_estimate=[[None,None,None,'source']]):
+        maxima2 = []
+        for maxi in maxima:
+            m = maxi[0]
+            mask = (self.x>(m-365*pmag*range_ratio))&(self.x<(m+365*pmag*range_ratio))
+            sub = self.masked(mask,replace=False)
+            if len(sub.x)>3:
+                sub.order()
+                sub.x-=m
+                base = np.array([sub.x**i for i in range(0,3)])
+                coeff,dust = sub.fit_base(base)
+                if Plot:
+                    xplot = np.linspace(np.min(sub.x),np.max(sub.x),20)
+                    curves = np.dot(np.array([xplot**i for i in range(0,3)]).T,coeff)
+                    plt.plot(xplot+m,curves,color='k',alpha=0.01)
+                coeff = coeff[:,coeff[2]<0]
+                centers = -coeff[1]/(2*coeff[2])
+                center = np.median(centers)
+                sign_para = np.median(coeff[2])/np.std(coeff[2])
+                summits = np.sum(np.array([centers**i for i in range(0,3)])*coeff,axis=0)
+                if (sign_para<-1)&(abs(center)<np.max(abs(sub.x))):
+                    maxima2.append([m+center,ff.mad(centers),np.median(summits),ff.mad(summits)])
+                    #plt.scatter(centers,summits,alpha=0.1)
+                    #plt.scatter(center,np.median(summits),color='k',marker='x')
+                else:
+                    maxima2.append(maxi)
+            else:
+                maxima2.append(maxi)
+        maxima2 = np.array(maxima2)
+    
+        return minima2, maxima2
+
+    def fit_cycles(self):
+
+        vec = self.out_data_analysed
+        output_table = self.out_output_table
+        pmag = self.out_pmag
+
+        params = output_table.loc['50%']
+        for p in list(params.keys()):
+            if p[0:3]=='C_{':
+                vec[0].y[vec[0].instrument==p[3:-1]] -= params[p]
+                vec[1].y[vec[1].instrument==p[3:-1]] -= params[p]
+
+        drift0 = self.out_model_drift.interpolate(vec[0].y,kind='linear')
+        drift1 = self.out_model_drift.interpolate(vec[1].y,kind='linear')
+
+        vec[0].y -= drift0.y
+        vec[1].y -= drift1.y
+
+        crit_baseline = (np.max(vec[1].x) - np.min(vec[1].x)) > (2*365*self.out_pmag)
+        print('[INFO] Crit baseline = %.0f | Crit convergence = %.0f'%(crit_baseline,self.out_convergence_flag))
+        if (self.out_convergence_flag)&(crit_baseline):
+            print('\n[INFO] Baseline long enough for cycles study')
+
+            model = vec[1].model_smooth
+            time_interp = np.arange(np.min(model.x),np.max(model.x),50)
+            curve = model.interpolate(time_interp,kind='cubic')
+
+            index,dust = ff.local_max(-curve.y) ; index = index.astype('int')
+            minima1 = curve.x[index] ; minima1y = curve.y[index]
+            
+            index,dust = ff.local_max(curve.y) ; index = index.astype('int')
+            maxima1 = curve.x[index] ; maxima1y = curve.y[index]
+            
+            idx1 = np.where(minima1<np.min(vec[1].x))[0][-1]
+            idx2 = np.where(minima1>np.max(vec[1].x))[0][0]
+            minima1 = minima1[idx1:idx2+1]
+            minima1y = minima1y[idx1:idx2+1]
+
+            idx1 = np.where(maxima1>minima1[0])[0][0]
+            idx2 = np.where(maxima1<minima1[-1])[0][-1]
+            maxima1 = maxima1[idx1:idx2+1]
+            maxima1y = maxima1y[idx1:idx2+1]
+
+            maxima1 = np.hstack([maxima1[:,np.newaxis],0*maxima1[:,np.newaxis],maxima1y[:,np.newaxis],0*maxima1y[:,np.newaxis]])
+            minima1 = np.hstack([minima1[:,np.newaxis],0*minima1[:,np.newaxis],minima1y[:,np.newaxis],0*minima1y[:,np.newaxis]])
+
+            coeff_lin = np.polyfit(maxima1[:,0],np.arange(len(maxima1)),1)
+            num = np.polyval(coeff_lin,-36113.5) # 1 january 1760
+            cycle_nb = (np.arange(len(maxima1))+1-np.round(num,0)).astype('int')
+
+            plt.figure(figsize=(18,9))
+            plt.axes([0.06,0.56,0.5,0.4])
+            plt.xlabel('Jdb - 2,400,000 [days]')
+            ax = plt.gca()
+
+            minima2, maxima2 = vec[1].fit_cycles_extrema(minima1,maxima1,pmag,range_ratio=0.40,Plot=True)
+            minima3, maxima3 = vec[0].fit_cycles_extrema(minima2,maxima2,pmag,range_ratio=0.33,Plot=False)
+
+            minima_slct = minima3
+            maxima_slct = maxima3
+
+            minima_slct[0,0] = minima_slct[1,0] - pmag*365.25
+            minima_slct[0,2] = minima_slct[1,2] ; minima_slct[0,1] = minima_slct[1,1] ; minima_slct[0,3] = minima_slct[1,3]
+            minima_slct[-1,0] = minima_slct[-2,0] + pmag*365.25
+            minima_slct[-1,2] = minima_slct[-2,2] ; minima_slct[-1,1] = minima_slct[-2,1] ; minima_slct[-1,3] = minima_slct[-2,3]
+
+            minima_curve = tableXY(minima_slct[:,0],minima_slct[:,2],minima_slct[:,3])
+            minima_curve.masked(minima_curve.yerr!=0,replace=True)
+            minima_curve = minima_curve.interpolate(minima_slct[:,0])
+            minima_slct[minima_slct[:,3]==0,2] = minima_curve.y[minima_slct[:,3]==0]
+            
+            if maxima_slct[0,3]==0:
+                maxima_slct[0,2] = maxima_slct[1,2] 
+            if maxima_slct[-1,3]==0:
+                maxima_slct[-1,2] = maxima_slct[-2,2] 
+
+            #maxima_curve = tableXY(maxima_slct[:,0],maxima_slct[:,2],maxima_slct[:,3])
+            #norm_max = maxima_curve.interpolate(vec[0].x,kind='cubic')
+            #plt.plot(norm_max.x,norm_max.y,color='k',ls=':')
+            norm_min = minima_curve.interpolate(vec[0].x,kind='cubic')
+            #plt.plot(norm_min.x,norm_min.y,color='k',ls=':')            
+
+            amps = maxima_slct[:,2] - 0.5*(minima_slct[1:,2]+minima_slct[:-1,2])
+            amp_max = np.max(amps)
+
+            cycle = vec[0].copy()
+
+            vec[0].plot(alpha=0.5)
+            plt.legend(fontsize=9)
+            plt.errorbar(minima_slct[:,0],minima_slct[:,2],xerr=minima_slct[:,1],yerr=minima_slct[:,3],capsize=0,marker='v',ls='',color='k',zorder=500,markersize=10)
+            plt.errorbar(maxima_slct[:,0],maxima_slct[:,2],xerr=maxima_slct[:,1],yerr=maxima_slct[:,3],capsize=0,marker='^',ls='',color='k',zorder=500,markersize=10)
+            for i in range(len(maxima_slct)):
+                plt.text(maxima_slct[i,0],0.5*(minima_slct[i,2]+minima_slct[i+1,2]),cycle_nb[i],ha='center',zorder=200)
+
+            plt.axes([0.06,0.06,0.5,0.4],sharex=ax)
+            plt.xlabel('Jdb - 2,400,000 [days]')
+            plt.ylabel(r'$P_{mag}$ [years]')
+            plt.axhline(y=output_table['P']['50%'],color='k')
+            plt.axhspan(output_table['P']['16%'],output_table['P']['84%'],color='k',alpha=0.25)
+            plt.errorbar(maxima_slct[:,0],(minima_slct[1:,0]-minima_slct[:-1,0])/365.25,yerr=np.sqrt(minima_slct[1:,1]**2+minima_slct[:-1,1]**2)/365.25,marker='o',color='k')
+
+            plt.axes([0.62,0.38,0.15,0.58])
+            plt.xlabel('Time [years]')
+            offset=0
+            for i in range(len(maxima_slct)):
+                v = vec[0].copy()
+                #v.y -= norm_min.y
+                #v.y /= (norm_max.y-norm_min.y)
+                #v.yerr /= (norm_max.y-norm_min.y)
+
+                mask = (v.x>minima_slct[i,0])&(v.x<minima_slct[i+1,0])
+                v.y[~mask] = np.nan
+                v.x -= minima_slct[i,0]
+                v.x /= 365.25
+                zero = 0.5*(minima_slct[i+1,2]+minima_slct[i,2])
+                v.y-=zero
+                if i:
+                    offset-=1.5*amp_max
+                plt.plot([-3,pmag+3],[offset,offset],color='k',ls='-',alpha=0.3)
+                v.y += offset
+                v.plot()
+                plt.text(-4,offset,cycle_nb[i],ha='right',va='center')
+
+            plt.axvline(x=0,ls=':',color='k')
+            plt.axvline(x=pmag,ls=':',color='k')
+            plt.tick_params(labelleft=False,left=False)
+
+            plt.axes([0.82,0.38,0.15,0.58])
+            plt.xlabel('Time []')
+            offset=0
+            save = []
+            for i in range(len(minima_slct)-1):
+                v = vec[0].copy()
+                mask = (v.x>minima_slct[i,0])&(v.x<minima_slct[i+1,0])
+                v.y[~mask] = np.nan
+                v.x -= minima_slct[i,0]
+                v.x /= (minima_slct[i+1,0]-minima_slct[i,0])
+                zero = 0.5*(minima_slct[i+1,2]+minima_slct[i,2])
+                v.y-=zero
+                if i:
+                    offset-=amp_max*1.5
+                plt.plot([-0.2,1.2],[offset,offset],color='k',ls='-',alpha=0.3)
+                v.y += offset
+                v.plot(alpha=0.6)
+                plt.text(-0.4,offset,cycle_nb[i],ha='right',va='center')
+                t = tableXY(v.x,(v.y-offset)/amps[i],v.yerr/amps[i])
+                t.instrument = v.instrument
+                t.mask_flag = v.mask_flag
+                save.append(t)
+            
+            plt.axvline(x=0,ls=':',color='k')
+            plt.axvline(x=1,ls=':',color='k')
+            plt.tick_params(labelleft=False,left=False)
+
+            plt.axes([0.62,0.06,0.35,0.25])
+            x = np.hstack([v.x for v in save])
+            y = np.hstack([v.y for v in save])
+            yerr = np.hstack([v.yerr for v in save])
+            ins = np.hstack([v.instrument for v in save])
+            mask_flag = np.hstack([v.mask_flag for v in save])
+            master = tableXY(x,y,yerr)
+            master.instrument = ins
+            master.mask_flag = mask_flag
+            master.masked(master.y==master.y)
+            master.order()
+            master.plot(alpha=0.2)
+            binx = np.arange(0,1,0.1)+0.05
+            biny = [np.nanmedian(master.y[~master.mask_flag][master.x[~master.mask_flag]//0.10==b]) for b in np.arange(10)]
+            binx = np.hstack([binx-1,binx,binx+1]) 
+            biny = np.hstack([biny,biny,biny])
+            master_cycle = tableXY(binx,biny,0*binx)
+            master_cycle = master_cycle.interpolate(np.linspace(0,1,100),kind='cubic')
+            plt.plot(master_cycle.x,master_cycle.y,color='k',zorder=100,marker='o')
+            proba = master_cycle.y
+            proba-=np.min(proba)
+            proba/=np.sum(proba)
+            sample = np.random.choice(master_cycle.x,1000,p=proba,replace=True)
+            skew = np.sum((sample-np.mean(sample))**3)/(len(sample-1)*np.std(sample)**3)
+            plt.title(r'$\gamma$ = %.2f'%(skew))
+            plt.axhline(y=0,color='k',alpha=0.75,ls=':',zorder=101)
+            plt.axvline(x=0.5,color='k',alpha=0.75,ls=':',zorder=101)
+            plt.ylim(-0.4,1.9)
+
+    def fit_period_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict=False, previous_period_estimate=[[None,None,None,'source']]):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
         """
+
+        self.instrument = np.array([i+'$'+j for i,j in zip(self.instrument,self.reference)])
         self.night_stack()
+        self.instrument = np.array([i.split('$')[0] for i in self.instrument])
+        self.merge_sources()
+
         reference = self.copy()
-        seasons_t0 = season_length(self.x)[0]
+        seasons_t0 = ff.season_length(self.x)[0]
         self.split_instrument()
         for ins in self.instrument_splited.keys():
             self.instrument_splited[ins].split_seasons(seasons_t0=seasons_t0)
@@ -802,19 +1006,20 @@ class tableXY(object):
             if data_driven_std: #second iteration for uncertainties on slope params
                 self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
         self.merge_instrument()
-        
+        reference.mask_flag = self.mask_flag
+
         binned = self.bin.y.copy()
         for ins in np.unique(self.bin.instrument):
             binned[self.bin.instrument==ins] -= np.median(binned[self.bin.instrument==ins])
 
         if len(binned)>=6:
             #bad season value
-            mask = rm_outliers(binned,m=5)[0]
+            mask = ff.rm_outliers(binned,m=5)[0]
             self.bin.masked(mask)
 
         if len(self.bin.y)>=6:
             #bad season value
-            mask = self.bin.yerr<=mad(self.bin.y)*10
+            mask = self.bin.yerr<=ff.mad(self.bin.y)*10
             self.bin.masked(mask)
 
         self.grad = self.bin.grad
@@ -856,7 +1061,7 @@ class tableXY(object):
                 code.append('D%.0fO%.0f'%(deg,offset))
                 print('\n[INFO] Testing model : instrument_offset = %.0f + Trend_degree = %.0f'%(offset,deg))
                 dust = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=deg, fmt='o', fig=fig, offset_instrument=offset)
-                outputs.append([list(dust[1]),list(dust[2])])
+                outputs.append([list(dust[2]),list(dust[3])])
                 metric.append(vec[int(season_bin)].model_metric)
                 plt.close('automatic')
             metric = np.array(metric)
@@ -889,7 +1094,8 @@ class tableXY(object):
 
         offset_instrument = {'yes':True,'yes!':True,'no':False, 'no!':False, True:True, False:False}[offset_instrument]
 
-        warning2, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument,predict_today=predict_today)
+        warning2, converged, pmag_conservative, pmag_extracted = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=trend_degree, fmt='o', fig=fig, offset_instrument=offset_instrument,predict=predict)
+        self.output_period_detected = converged
 
         if warning2:
             print('\n[INFO] Conservatives values selected')
@@ -900,10 +1106,15 @@ class tableXY(object):
 
         ylim = ax.get_ylim()
         for n,ins in enumerate(np.sort(np.unique(reference.instrument))):
-            mask = reference.instrument==ins
-            ax.errorbar(reference.x[mask], reference.y[mask], yerr=reference.yerr_backup[mask], zorder=2, alpha=0.2,fmt='.',ls='',color='C%.0f'%(n))
+            mask = (reference.instrument==ins)&(~reference.mask_flag)
+            if sum(mask):
+                ax.errorbar(reference.x[mask], reference.y[mask], yerr=reference.yerr_backup[mask], zorder=2, alpha=0.3,fmt='.',ls='',color='C%.0f'%(n))
+            mask2 = (reference.instrument==ins)&(reference.mask_flag)
+            if sum(mask2):
+                ax.errorbar(reference.x[mask2], reference.y[mask2], yerr=reference.yerr_backup[mask2], zorder=2, alpha=0.2,fmt='x',ls='',color='C%.0f'%(n))
+
         ax.set_ylim(ylim)
-        ax.legend(loc=1)
+        ax.legend(loc=3,fontsize=9)
         if self.proxy_name:
             ax.set_ylabel(self.proxy_name)
 
@@ -920,6 +1131,9 @@ class tableXY(object):
             print('[FINAL REPORT] Pmag = %.2f [%.2f - %.2f]'%(pmag,pmag_inf,pmag_sup))
         print('============== \n')
 
+        if predict==False:
+            ax.set_xlim(np.min(reference.x)-pmag*365,np.max(reference.x)+pmag*365)
+
         bootstrap_table = vec[int(season_bin)].mcmc_table
         output_table = np.array([
             np.percentile(bootstrap_table,16,axis=0) ,
@@ -928,10 +1142,67 @@ class tableXY(object):
         pmag_extracted[1],
         output_table = np.vstack([np.array([pmag_inf,pmag,pmag_sup]),np.array(pmag_extracted),np.array(pmag_conservative),output_table.T]).T
         output_table = pd.DataFrame(output_table,columns=['P','P_computed','P_conservative']+list(bootstrap_table.keys()[1:]),index=['16%','50%','84%'])
+
+        self.out_output_table = output_table
+        self.out_data_analysed = vec
+        self.out_pmag = pmag
+        self.out_model_master = vec[1].model_master
+        self.out_model_smooth = vec[1].model_smooth
+        self.out_model_drift = vec[1].model_drift
+        self.out_convergence_flag = converged
+        self.prune_obs_model()
+
         print('\n[FINAL TABLE]\n')
         print('-----------------------------------')
         print(output_table[['P','K','phi']])
-        print('-----------------------------------')
+        print('-----------------------------------\n')
 
-        return output_table
 
+    def fit_period(self, predict=False, debug=False, fig_title='', previous_period_estimate=[[None,None,None,'source']]):
+        
+        #first iteration
+        self.fit_period_cycle(
+            automatic_fit=True, 
+            predict=predict, 
+            data_driven_std=True, 
+            fig_title=fig_title, 
+            previous_period_estimate=previous_period_estimate) 
+        
+        if not debug:
+            plt.close('all')
+        
+        #second iteration
+        self.fit_period_cycle(
+            automatic_fit=True, 
+            predict=predict, 
+            data_driven_std=False, 
+            fig_title=fig_title,
+            previous_period_estimate=previous_period_estimate) 
+
+
+try: 
+    db = pd.read_pickle('/Users/cretignier/Documents/Python/database/ACTIVITY/Activity_Sindex_database.p')
+    def get_star(starname):
+        sub_db = db.loc[db['star']==starname]
+        if len(sub_db):
+            vec = tableXY(
+                np.array(sub_db['jdb']).astype('float'),
+                np.array(sub_db['smw']).astype('float'),
+                np.array(sub_db['smw_std']).astype('float'),
+                proxy_name='S-index'
+                )
+            vec.instrument = np.array(sub_db['ins']).astype('str')
+            vec.reference = np.array(sub_db['source']).astype('str')
+            code = vec.instrument.astype('object')+' ('+vec.reference.astype('object')+')'
+            cod = np.unique(code)
+            print('[INFO] %s found in the database with references:\n'%(starname))
+            for c in cod:
+                print(' ° ',c)
+            print('\n')
+            vec.set_ins_uncertainties()
+        else:
+            print('[INFO] %s not found in the database'%(starname))
+            vec = None
+        return vec
+except:
+    pass
