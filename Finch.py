@@ -13,24 +13,29 @@ from scipy.interpolate import interp1d
 
 import Finch_functions as ff
 
-__version__ = '1.7.0'
+__version__ = '1.7.1'
+
+rng = np.random.default_rng(seed=4)
 
 class tableXY(object):
 
 
-    def __init__(self, x, y, yerr, proxy_name='proxy1'):
+    def __init__(self, x, y, yerr, instrument=None, reference=None, proxy_name='proxy1'):
         self.y = np.array(y)  
         self.x = np.array(x)  
         self.yerr = np.array(yerr)
         self.yerr_backup = np.array(yerr)
         self.proxy_name = proxy_name
         self.mask_flag = np.zeros(len(self.x)).astype('bool')
+        self.verbose=True
 
         if len(x)!=len(y):
             print('X et Y have no the same lenght')
         
-        self.instrument = np.array(['unknown']*len(self.x))
-        self.reference = np.array(['unknown']*len(self.x))
+        if instrument is None:
+            self.instrument = np.array(['unknown']*len(self.x))
+        if reference is None:
+            self.reference = np.array(['unknown']*len(self.x))
 
     def copy(self):
         vec = tableXY(self.x,self.y,self.yerr)
@@ -178,7 +183,7 @@ class tableXY(object):
 
     def split_instrument(self):
         self.instrument_splited = {}
-        for n,ins in enumerate(np.sort(np.unique(self.instrument))):
+        for n,ins in enumerate(np.sort(np.unique(self.instrument[~self.mask_flag]))):
             mask_instrument = self.instrument==ins
             self.instrument_splited[ins] = self.masked(mask_instrument,replace=False)
 
@@ -202,7 +207,7 @@ class tableXY(object):
                 values = [v1.y[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
                 values_std = [v1.yerr[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
                 merged_time, merged, merged_std, src_order = ff.merge_sources(times, values, values_std, max_diff=1)
-                print('References for instrument %s = '%(ins),sources[src_order])
+                ff.printv('References for instrument %s = '%(ins),other=sources[src_order],verbose=self.verbose)
                 v1 = tableXY(merged_time, merged, merged_std)
                 v1.instrument = [ins]*len(v1.x)
                 v1.reference = [' & '.join(list(sources))]*len(v1.x)
@@ -223,6 +228,7 @@ class tableXY(object):
         self.bin = tableXY(x,y,yerr)
         self.bin.instrument = instrument
         self.bin.reference = source
+        self.bin.verbose = self.verbose
 
 
         x = [] ; y = [] ; yerr = [] ; instrument = []
@@ -268,7 +274,7 @@ class tableXY(object):
                 try:
                     value = ins_smw_std[i][s]
                     self.yerr[mask_ins&mask_source] = np.sqrt(self.yerr[mask_ins&mask_source]**2+value**2) 
-                    print('[INFO] Uncertainties updated to a minimum jitter of %.4f for instrument = %s (%s)'%(value,i,s))
+                    print('[INFO] Uncertainties set to a minimum jitter of %.4f for instrument = %s (%s)'%(value,i,s))
                 except:
                     print('[WARNING] instrument = %s (%s) not in the default list of calibrated uncertainties'%(i,s))
 
@@ -278,24 +284,25 @@ class tableXY(object):
         model = model.interpolate(self.x)
         for ins in np.unique(self.instrument):
             mask_ins = (self.instrument==ins)&(~self.mask_flag)
-            xx = self.x[mask_ins]
-            yy = self.y[mask_ins]
-            residu = (yy-model.y[mask_ins])
-            deg = int(np.round(5*(np.max(xx)-np.min(xx))/(pmag*365.25),0))
-            deg = np.min([deg,6])
-            residu = residu - np.polyval(np.polyfit(xx,residu,deg),xx)
-            residu_norm = residu/model.yerr[mask_ins]
-            #plt.figure() ; plt.subplot(2,1,1) ; plt.scatter(xx,residu)  ; plt.subplot(2,1,2) ; plt.scatter(xx,residu_norm)
-            new_yerr = np.std(residu[abs(residu_norm)<zmin])
-            new_yerr = new_yerr**2-np.median(self.yerr[mask_ins])**2
-            if new_yerr>0:
-                new_yerr = np.sqrt(new_yerr)
-            else:
-                new_yerr = 0
-            print('[INFO] Uncertainties updated to %.4f for instrument = %s '%(np.median(np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)),ins))
-            self.yerr[mask_ins] = np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)
-            index = np.arange(len(self.x))[mask_ins][abs(residu_norm)>zmin]
-            self.mask_flag[index] = True
+            if sum(mask_ins):
+                xx = self.x[mask_ins]
+                yy = self.y[mask_ins]
+                residu = (yy-model.y[mask_ins])
+                deg = int(np.round(5*(np.max(xx)-np.min(xx))/(pmag*365.25),0))
+                deg = np.min([deg,6])
+                residu = residu - np.polyval(np.polyfit(xx,residu,deg),xx)
+                residu_norm = residu/model.yerr[mask_ins]
+                #plt.figure() ; plt.subplot(2,1,1) ; plt.scatter(xx,residu)  ; plt.subplot(2,1,2) ; plt.scatter(xx,residu_norm)
+                new_yerr = np.std(residu[abs(residu_norm)<zmin])
+                new_yerr = new_yerr**2-np.median(self.yerr[mask_ins])**2
+                if new_yerr>0:
+                    new_yerr = np.sqrt(new_yerr)
+                else:
+                    new_yerr = 0
+                print('[INFO] Uncertainties updated to %.4f for instrument = %s '%(np.median(np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)),ins))
+                self.yerr[mask_ins] = np.sqrt(new_yerr**2+self.yerr[mask_ins]**2)
+                index = np.arange(len(self.x))[mask_ins][abs(residu_norm)>zmin]
+                self.mask_flag[index] = True
 
 
     def split_seasons(self,Plot=False,seasons_t0=None):
@@ -317,13 +324,14 @@ class tableXY(object):
         for i in range(len(self.seasons_splited)):
             if Plot:
                 self.seasons_splited[i].plot(color='C%.0f'%(i))
-            self.seasons_std.append(np.std(self.seasons_splited[i].y))
-            self.seasons_meanx.append(np.nanmean(self.seasons_splited[i].x))
-            self.seasons_meany.append(np.nansum(self.seasons_splited[i].y/self.seasons_splited[i].yerr**2)/np.nansum(1/self.seasons_splited[i].yerr**2))
-            self.seasons_medy.append(np.nanmedian(self.seasons_splited[i].y))
-            self.seasons_meany_std.append(np.nanmedian(self.seasons_splited[i].yerr))
-            self.seasons_miny.append(np.nanmin(self.seasons_splited[i].y))
-            self.seasons_maxy.append(np.nanmax(self.seasons_splited[i].y))
+            mask_flag = ~self.seasons_splited[i].mask_flag
+            self.seasons_std.append(np.std(self.seasons_splited[i].y[mask_flag]))
+            self.seasons_meanx.append(np.nanmean(self.seasons_splited[i].x[mask_flag]))
+            self.seasons_meany.append(np.nansum(self.seasons_splited[i].y[mask_flag]/self.seasons_splited[i].yerr[mask_flag]**2)/np.nansum(1/self.seasons_splited[i].yerr[mask_flag]**2))
+            self.seasons_medy.append(np.nanmedian(self.seasons_splited[i].y[mask_flag]))
+            self.seasons_meany_std.append(np.nanmedian(self.seasons_splited[i].yerr[mask_flag]))
+            self.seasons_miny.append(np.nanmin(self.seasons_splited[i].y[mask_flag]))
+            self.seasons_maxy.append(np.nanmax(self.seasons_splited[i].y[mask_flag]))
             self.seasons_nb.append(len(self.seasons_splited[i].x))
         
         self.seasons_span = [np.max(s.x)-np.min(s.x) for s in self.seasons_splited]
@@ -417,6 +425,7 @@ class tableXY(object):
         self.bin = tableXY(new_x,new_y,new_yerr)
         self.bin.grad = tableXY(new_gradx,new_grady,new_gradyerr)
         self.bin.reference = [np.unique(self.reference)[0]]*len(self.bin.x)
+        self.bin.verbose = self.verbose
 
         if data_driven_std:
             self.yerr_backup = self.yerr.copy()
@@ -431,18 +440,16 @@ class tableXY(object):
 
 
     def bootstrap(self,perm=1000):
-        new_y = self.y+np.random.randn(perm,len(self.x))*self.yerr
+        new_y = self.y+rng.normal(size=(perm,len(self.x)))*self.yerr
         return new_y
 
 
     def fit_base(self,base_vec,perm=1000):
 
         sample = self.bootstrap(perm=perm)
-        weight = np.ones(len(self.yerr))
-        coeff = np.linalg.lstsq(base_vec.T, sample.T,rcond=None)[0]
-
-        #coeff = np.array([np.linalg.lstsq(base_vec[:,i,:].T*np.sqrt(weight[i])[:,np.newaxis], (table[i])*np.sqrt(weight[i]),rcond=None)[0] for i in range(len(table))])
-
+        weight = (1/self.yerr**2)*0+1
+        coeff = np.linalg.lstsq(base_vec.T*np.sqrt(weight)[:,np.newaxis], (sample*np.sqrt(weight)).T,rcond=None)[0]
+        #coeff = np.linalg.lstsq(base_vec.T, sample.T,rcond=None)[0]
         return coeff, sample
 
 
@@ -465,8 +472,8 @@ class tableXY(object):
             if sum(count>1):
                 minor_instruments = np.hstack(count[count>1].keys())
                 if len(minor_instruments):
-                    print('[INFO] Major instrument detected : %s'%(major_instrument))
-                    print('[INFO] Minor instrument detected : ',minor_instruments)
+                    ff.printv('[INFO] Major instrument detected : %s'%(major_instrument),verbose=self.verbose)
+                    ff.printv('[INFO] Minor instrument detected : ',other=minor_instruments,verbose=self.verbose)
 
         x_val = self.x.copy()
         y_val = self.y.copy()
@@ -482,7 +489,7 @@ class tableXY(object):
             if len(removed):
                 rejected = tableXY(x_val[~kept], y_val[~kept]*np.nan, yerr_val[~kept])
                 rejected.instrument = ins_val[~kept]            
-                print('[INFO] Instrument removed from the fit because single season',removed)
+                ff.printv('[INFO] Instrument removed from the fit because single season',other=removed,verbose=self.verbose)
                 values_rejected = 1
             x_val = x_val[kept]
             y_val = y_val[kept]
@@ -499,7 +506,7 @@ class tableXY(object):
             pmax = baseline*1.5
         pmax = np.min([pmax,30*365.25]) 
 
-        print('[INFO] Pmin = %.0f - Pmax = %.0f'%(pmin,pmax))
+        ff.printv('[INFO] Pmin = %.0f - Pmax = %.0f'%(pmin,pmax),verbose=self.verbose)
         self.grid_pmin = pmin
         self.grid_pmax = pmax
         
@@ -511,9 +518,9 @@ class tableXY(object):
         z = x_recentered/x_std
 
         nb_params = 2+trend_degree+1+len(minor_instruments)
-        print('\n[INFO] Nb parameter : %.0f | Nb observations : %.0f'%(nb_params,len(x_val)))
+        ff.printv('\n[INFO] Nb parameter : %.0f | Nb observations : %.0f'%(nb_params,len(x_val)),verbose=self.verbose)
         if (nb_params+1)>=len(x_val):
-            print('[WARNING] Too much parameters compared to number of observations')
+            ff.printv('[WARNING] Too much parameters compared to number of observations',verbose=self.verbose)
             trend_degree = 0
             offset_instrument = False
 
@@ -578,7 +585,7 @@ class tableXY(object):
         metric /= np.max(metric)
         metric = np.mean(metric)
         self.model_metric = metric
-        print('[INFO] Metric model = %.3f'%(metric))
+        ff.printv('[INFO] Metric model = %.3f'%(metric),verbose=self.verbose)
 
         sup = np.min(med_chi)+std_chi[np.argmin(med_chi)]
         kept = med_chi<=sup
@@ -591,7 +598,7 @@ class tableXY(object):
         crit1 = (best_fit_period==np.max(period_grid))&(trend_degree!=0)
         crit2 = (np.max(period_grid[kept])==np.max(period_grid))&(trend_degree!=0)
         if crit1|crit2:
-            print('[WARNING] Period larger than the baseline polytrend should be removed')
+            ff.printv('[WARNING] Period larger than the baseline polytrend should be removed',verbose=self.verbose)
             warning=1
 
         density = med_loglk.copy()
@@ -694,7 +701,7 @@ class tableXY(object):
 
         chi2_final = np.sum((y_val-self.model_master.y)**2/yerr_val**2)
         self.bic = chi2_final+nb_params*np.log(len(x_val))
-        print('[INFO] BIC = ',self.bic)
+        ff.printv('[INFO] BIC = %.4f'%(self.bic),verbose=self.verbose)
 
         if 'b' in coeff_likelihood.keys():
             coeff_likelihood['b'] *= (365.25/x_std) 
@@ -803,7 +810,7 @@ class tableXY(object):
     
         return minima2, maxima2
 
-    def fit_cycles(self):
+    def fit_cycles(self,fig_title=''):
 
         vec = self.out_data_analysed
         output_table = self.out_output_table
@@ -822,9 +829,9 @@ class tableXY(object):
         vec[1].y -= drift1.y
 
         crit_baseline = (np.max(vec[1].x) - np.min(vec[1].x)) > (2*365*self.out_pmag)
-        print('[INFO] Crit baseline = %.0f | Crit convergence = %.0f'%(crit_baseline,self.out_convergence_flag))
+        ff.printv('[INFO] Crit baseline = %.0f | Crit convergence = %.0f'%(crit_baseline,self.out_convergence_flag),verbose=self.verbose)
         if (self.out_convergence_flag)&(crit_baseline):
-            print('\n[INFO] Baseline long enough for cycles study')
+            ff.printv('\n[INFO] Baseline long enough for cycles study',verbose=self.verbose)
 
             model = vec[1].model_smooth
             time_interp = np.arange(np.min(model.x),np.max(model.x),50)
@@ -854,6 +861,7 @@ class tableXY(object):
             cycle_nb = (np.arange(len(maxima1))+1-np.round(num,0)).astype('int')
 
             plt.figure(figsize=(18,9))
+            fig.suptitle(fig_title)
             plt.axes([0.06,0.56,0.5,0.4])
             plt.xlabel('Jdb - 2,400,000 [days]')
             ax = plt.gca()
@@ -986,7 +994,7 @@ class tableXY(object):
             plt.axvline(x=0.5,color='k',alpha=0.75,ls=':',zorder=101)
             plt.ylim(-0.4,1.9)
 
-    def fit_period_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', predict=False, previous_period_estimate=[[None,None,None,'source']]):
+    def fit_period_cycle(self, data_driven_std=True, trend_degree=1, season_bin=True, offset_instrument='yes', automatic_fit=False, debug=False, fig_title='', figname=None, predict=False, previous_period_estimate=[[None,None,None,'source']]):
         """
         data_driven_std [bool] : replace binned data uncertainties by inner dispersion
         trend_degree [int] : polynomial drift
@@ -1022,6 +1030,8 @@ class tableXY(object):
             mask = self.bin.yerr<=ff.mad(self.bin.y)*10
             self.bin.masked(mask)
 
+        
+
         self.grad = self.bin.grad
         vec = [self,self.bin]
 
@@ -1055,20 +1065,25 @@ class tableXY(object):
             metric = []
             code = []
             outputs = []
+            warn = []
             count=0
             for deg, offset in params:
                 fig,gs,ax,ax_chi = gen_figure(name='automatic')
                 code.append('D%.0fO%.0f'%(deg,offset))
-                print('\n[INFO] Testing model : instrument_offset = %.0f + Trend_degree = %.0f'%(offset,deg))
+                ff.printv('\n[INFO] Testing model : instrument_offset = %.0f + Trend_degree = %.0f'%(offset,deg),verbose=self.verbose)
                 dust = vec[int(season_bin)].fit_sinus(ax=ax, ax_chi=ax_chi, trend_degree=deg, fmt='o', fig=fig, offset_instrument=offset)
+                warn.append([1-dust[0],dust[1]])
                 outputs.append([list(dust[2]),list(dust[3])])
                 metric.append(vec[int(season_bin)].model_metric)
                 plt.close('automatic')
             metric = np.array(metric)
+            warn = np.array(warn)
+            if not np.sum(warn):
+                metric[params[:,0]==1] = metric[params[:,0]==1]+1
             trend_degree = params[np.argmin(metric)][0]
             offset_instrument = params[np.argmin(metric)][1]
 
-            fig,gs,ax,ax_chi = gen_figure()
+            fig,gs,ax,ax_chi = gen_figure(name=figname)
             fig.add_subplot(5,5,5)
 
             for n,l in enumerate(np.array(outputs)):
@@ -1080,15 +1095,14 @@ class tableXY(object):
 
             if previous_period_estimate[0][0] is not None:
                 for n2,l in enumerate(np.array(previous_period_estimate)):
-                    print(l)
                     plt.errorbar([n+n2+1],[float(l[0])],yerr=[[abs(float(l[1]))],[abs(float(l[2]))]],marker='o',ls='',color='k')
                     code.append(l[3])
 
             plt.xticks(np.arange(len(code)),code)
 
-            print('\n===========')
-            print('[AUTOMATIC] Model selected : instrument_offset = %.0f + Trend_degree = %.0f'%(offset_instrument,trend_degree))
-            print('===========\n')
+            ff.printv('\n===========',verbose=self.verbose)
+            ff.printv('[AUTOMATIC] Model selected : instrument_offset = %.0f + Trend_degree = %.0f'%(offset_instrument,trend_degree),verbose=self.verbose)
+            ff.printv('===========\n',verbose=self.verbose)
         else:
             fig,gs,ax,ax_chi = gen_figure()
 
@@ -1098,10 +1112,10 @@ class tableXY(object):
         self.output_period_detected = converged
 
         if warning2:
-            print('\n[INFO] Conservatives values selected')
+            ff.printv('\n[INFO] Conservatives values selected',verbose=self.verbose)
             pmag_inf,pmag,pmag_sup = pmag_conservative
         else:
-            print('\n[INFO] Extracted values selected')
+            ff.printv('\n[INFO] Extracted values selected',verbose=self.verbose)
             pmag_inf,pmag,pmag_sup = pmag_extracted
 
         ylim = ax.get_ylim()
@@ -1118,18 +1132,18 @@ class tableXY(object):
         if self.proxy_name:
             ax.set_ylabel(self.proxy_name)
 
-        print('\n==============')
+        ff.printv('\n==============',verbose=self.verbose)
         if pmag_sup==vec[int(season_bin)].grid_pmax/365.25:
-            print('[FINAL REPORT] Pmag > %.2f [%.2f - ???]'%(pmag_inf,pmag_inf))
+            ff.printv('[FINAL REPORT] Pmag > %.2f [%.2f - ???]'%(pmag_inf,pmag_inf),verbose=self.verbose)
             pmag = pmag_inf
             pmag_sup = np.nan
         elif pmag_inf==vec[int(season_bin)].grid_pmin:
-            print('[FINAL REPORT] Pmag < %.2f [??? - %.2f]'%(pmag_sup,pmag_sup))
+            ff.printv('[FINAL REPORT] Pmag < %.2f [??? - %.2f]'%(pmag_sup,pmag_sup),verbose=self.verbose)
             pmag = pmag_sup
             pmag_inf = np.nan
         else:
-            print('[FINAL REPORT] Pmag = %.2f [%.2f - %.2f]'%(pmag,pmag_inf,pmag_sup))
-        print('============== \n')
+            ff.printv('[FINAL REPORT] Pmag = %.2f [%.2f - %.2f]'%(pmag,pmag_inf,pmag_sup),verbose=self.verbose)
+        ff.printv('============== \n',verbose=self.verbose)
 
         if predict==False:
             ax.set_xlim(np.min(reference.x)-pmag*365,np.max(reference.x)+pmag*365)
@@ -1152,25 +1166,32 @@ class tableXY(object):
         self.out_convergence_flag = converged
         self.prune_obs_model()
 
-        print('\n[FINAL TABLE]\n')
-        print('-----------------------------------')
-        print(output_table[['P','K','phi']])
-        print('-----------------------------------\n')
+        ff.printv('\n[FINAL TABLE]\n',verbose=self.verbose)
+        ff.printv('-----------------------------------',verbose=self.verbose)
+        ff.printv('',other=output_table[['P','K','phi']],verbose=self.verbose)
+        ff.printv('-----------------------------------\n',verbose=self.verbose)
 
 
     def fit_period(self, predict=False, debug=False, fig_title='', previous_period_estimate=[[None,None,None,'source']]):
         
         #first iteration
+        if not debug:
+            self.verbose = False
+        
+        print('\n[INFO] First iteration to set the uncertainties... Wait\n')
+        
         self.fit_period_cycle(
             automatic_fit=True, 
             predict=predict, 
             data_driven_std=True, 
             fig_title=fig_title, 
+            figname = 'iter0',
             previous_period_estimate=previous_period_estimate) 
         
         if not debug:
-            plt.close('all')
+            plt.close('iter0')
         
+        self.verbose = True
         #second iteration
         self.fit_period_cycle(
             automatic_fit=True, 

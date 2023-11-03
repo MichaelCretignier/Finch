@@ -4,6 +4,7 @@
 @date: 31.09.2023
 """
 
+import numpy as np
 import pandas as pd
 
 import Finch as Finch
@@ -82,3 +83,32 @@ vec = Finch.get_star('HD109200')
 # Please: 
 # 1) cite ALL the ReadMe references if you are using such data 
 # 2) keep a similar table format if you provide an updated version of the database
+
+
+# =============================================================================
+# Naive example (sinusoid)
+# =============================================================================
+
+#create a simple signal
+x = np.sort(np.random.rand(900)*20*365.25)
+x = np.sort(x[x%365<250])
+y = np.sin(2*np.pi/(7*365.25)*x)+np.random.randn(len(x))*0.1
+yerr = np.ones(len(x))*0.1
+instrument = np.array(['ins1']*len(x))
+
+mask = (x>8*365)
+y[mask] = y[mask] + np.random.randn(sum(mask))*0.1
+yerr[mask] = yerr[mask]+0.1
+instrument[mask] = 'ins2'
+
+mask = (x>15*365)
+y[mask] = y[mask] + np.random.randn(sum(mask))*0.5 + 2
+yerr[mask] = yerr[mask]+0.5
+instrument[mask] = 'ins3'
+
+vec = Finch.tableXY(x,y,yerr)
+vec.instrument = instrument
+vec.fit_period(previous_period_estimate=[[7.00, -0.01, 0.01, 'Real']])
+
+#In this example, the instrumental offset model allow to correctly recover the period 
+# While simple Sinusoid fit would have overestimate the period

@@ -35,8 +35,7 @@ def match_nearest(array1, array2,random=True):
         array1 = np.array(array1)
     if type(array2)!=np.ndarray:
         array2 = np.array(array2)    
-    if not (np.product(~np.isnan(array1))*np.product(~np.isnan(array2))):
-        print('there is a nan value in your list, remove it first to be sure of the algorithme reliability')
+
     index1 = np.arange(len(array1))[~np.isnan(array1)] ; index2 = np.arange(len(array2))[~np.isnan(array2)]  
     array1 = array1[~np.isnan(array1)] ;  array2 = array2[~np.isnan(array2)]
     liste1 = np.arange(len(array1))[:,np.newaxis]*np.hstack([np.ones(len(array1))[:,np.newaxis],np.zeros(len(array1))[:,np.newaxis]])
@@ -72,6 +71,12 @@ def match_nearest(array1, array2,random=True):
         
     return mat
 
+def printv(text,other=None,verbose=True):
+    if verbose:
+        if other is None:
+            print(text)
+        else:
+            print(text,other)
 
 def mad(array,axis=0):
     """"""
