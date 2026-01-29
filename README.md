@@ -1,7 +1,7 @@
 # Finch
 
 <p align="center">
-  <img src="logo.png" alt="Project logo" width="700">
+  <img src="logo.png" alt="Project logo" width="750">
 </p>
 
 # Contact Me
