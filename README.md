@@ -59,17 +59,14 @@ Try to run the code:
 run example.py
 ```
 
-————————-————————-—
-IMPORTANT INFORMATION :
-————————————————-——
+
+## Citations
 
 Even if Finch has never been properly presented in a paper, since this method was initially a standard analysis of the YARARA pipeline of Cretignier et al., 2021 paper, please cite it as a "publicly available function of the YARARA pipeline".
 
 ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
 
-—————————————
-CODE DETAIL :
-—————————————
+## Details Description of the Algorithm
 
 The magnetic cycle model is a simple sinusoids that includes polynomial drift and instrumental offsets.
 
@@ -78,3 +75,5 @@ Uncertainties are derived using intra-season jitter (induced by the instrumental
 The code estimates the uncertainties on all the parameters by bootstrap using the advantage of the simple multilinear model optimized via a least-square matrix inversion. 
 
 The code contains an automatic mode that compares different pre-registered models and selects the one producing the sharpest likelihood. 
+
+A Gaussian-Process can then be run using as initial guess the output of the previous fit ensuring stability. 
