@@ -65,11 +65,11 @@ run example.py
 
 Finch input are typical .csv files structure containing: 
 
-1) jdb \
-2) proxy \
-3) proxy uncertainties \
-4) instrument (spectrograph) \
-5) reference (sources) \
+1) jdb (jdb - 2,400,000)
+2) proxy (MHK in %)
+3) proxy uncertainties 
+4) instrument (spectrograph) 
+5) reference (sources) 
 6) flag (binary)
 
 flag=1 data are rejected of FINCH analysis, but preserved in the plots
