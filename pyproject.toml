@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the 
 
 [project]
 name = "finch"
-version = "1.8.0"
+version = "2.0.0"
 description = "A package to fit magnetic cycles on the MHK activity index coming from multi-instrument and"
 authors = [
     {name = "Michael Cretignier", email = "michael.cretignier@physics.ox.ac.uk"}
@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.urls]
-Source = "https://github.com/MichaelCretignier/TACS"
+Source = "https://github.com/MichaelCretignier/FINCH"
 
 [project.scripts] # Define scripts here if you have any
 
