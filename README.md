@@ -51,7 +51,7 @@ cd .../GitHub/FINCH
 ipython
 ```
 
-Then run the example using the matplotlib magic:
+Then run the example using the magic matplotlib command line ```%matplotlilb``` :
 
 ```
 [IPYTHON]
