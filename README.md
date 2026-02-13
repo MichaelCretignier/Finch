@@ -42,7 +42,7 @@ conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scip
 
 ## Test minimal example
 
-Move inside the directory and launch an ipython shell:
+Move inside the ```SNAKY``` directory and launch an iPython shell:
 
 ```
 [TERMINAL]
