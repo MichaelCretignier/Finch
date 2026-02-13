@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: finch
-Version: 2.0.3
+Version: 2.0.4
 Summary: A package to fit magnetic cycles on the MHK activity index coming from multi-instrument levels
 Author-email: Michael Cretignier <michael.cretignier@physics.ox.ac.uk>
 License: MIT
@@ -12,7 +12,7 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Scientific/Engineering :: Astronomy
-Requires-Python: ==3.12.5
+Requires-Python: <3.13,>=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: pandas==2.3.2; python_version >= "3.12"
