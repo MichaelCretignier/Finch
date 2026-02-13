@@ -74,7 +74,7 @@ Finch input tables are typical .csv files containing at minimum 6 columns:
 
 flag=1 data are rejected of FINCH analysis, but preserved in the plots
 
-Finch can download any .csv table easily to produce a ```tableXY``` Finch ```vec``` object:
+Finch can create a ```tableXY``` Finch ```vec``` object by loading right formatted .csv table:
 
 ```
 [IPYTHON]
