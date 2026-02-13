@@ -17,7 +17,7 @@ from . import Finch_GP as fgp
 from . import Finch_functions as ff
 from . import Finch_variables as fv
 
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 print(Fore.GREEN+"""\n[INFO FINCH]
 [INFO USER] FINCH version = """+__version__ +""" 
