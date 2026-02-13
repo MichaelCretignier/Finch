@@ -29,14 +29,6 @@ If it crashes, install a Python environment:
 conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 scipy=1.16.2 matplotlib=3.10.6 ipython=9.5.0 colorama=0.4.6 scikit-learn=1.7.2 -y 
 ```
 
-————————-————————-—
-IMPORTANT INFORMATION :
-————————————————-——
-
-Even if Finch has never been properly presented in a paper, since this method was initially a standard analysis of the YARARA pipeline of Cretignier et al., 2021 paper, please cite it as a "publicly available function of the YARARA pipeline".
-
-ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
-
 —————————————
 REQUIREMENT :
 —————————————
@@ -49,6 +41,31 @@ matplotlib (3.10.6) \
 pandas (2.3.2) \
 colorama (0.4.6) \
 scikit-learn (1.7.2)
+
+## Test minimal example
+
+Move inside the directory and launch an ipython shell:
+
+```
+[TERMINAL]
+cd .../GitHub/FINCH
+ipython
+```
+
+Try to run the code:
+
+```
+[IPYTHON]
+run example.py
+```
+
+————————-————————-—
+IMPORTANT INFORMATION :
+————————————————-——
+
+Even if Finch has never been properly presented in a paper, since this method was initially a standard analysis of the YARARA pipeline of Cretignier et al., 2021 paper, please cite it as a "publicly available function of the YARARA pipeline".
+
+ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
 
 —————————————
 CODE DETAIL :
