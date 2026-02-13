@@ -19,7 +19,7 @@ https://github.com/MichaelCretignier/FINCH
 
 ## Installation
 
-Download the directory and try to run example.py with your own Python installation.
+Download the directory and try to run ```example.py``` with your own Python installation.
 If it crashes, install a Python environment:
 
  [Mac M4 Chip] Python environment (Conda install) (Python 3.12.5)
