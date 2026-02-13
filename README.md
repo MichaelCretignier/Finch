@@ -74,21 +74,23 @@ Finch input tables are typical .csv files containing at minimum 6 columns:
 
 flag=1 data are rejected of FINCH analysis, but preserved in the plots
 
-Finch can download any .csv table easily to produce a tableXY Finch ```vec``` object:
+Finch can download any .csv table easily to produce a ```tableXY``` Finch ```vec``` object:
 
 ```
 [IPYTHON]
 import finch as Finch
-vec = import_csv(
-  your_file.csv, 
-  proxy_name='MHK', 
-  starname='HD128621', 
-  teff=5142, 
-  logg=4.49, 
-  feh=0.15, 
-  create_hydra=True)
+vec = Finch.import_csv(
+  'your_file.csv', 
+  proxy_name = 'MHK', 
+  starname = 'HD128621', 
+  teff = 5142, 
+  logg = 4.49, 
+  feh = 0.15, 
+  create_hydra = True)
 
 ```
+
+Stellar atmospheric parameters are optional but a good habit to get.
 
 ## Citations
 
