@@ -33,13 +33,14 @@ conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 sci
 REQUIREMENT :
 —————————————
 
-Standard python libraries : 
+Standard python libraries for Python 3.12.5 : 
 
 numpy (1.26.4) \
 scipy (1.16.2) \
 matplotlib (3.10.6) \
 pandas (2.3.2) \
 colorama (0.4.6) \
+ipython (9.5.0) \
 scikit-learn (1.7.2)
 
 ## Test minimal example
