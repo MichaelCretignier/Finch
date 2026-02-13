@@ -141,4 +141,12 @@ def fit_gp(finch_xy, period_bounds = [7.5,7.7,8.0], baseline_factor=1, length_sc
     finch_xy.out_gp_predict = [np.round(today_pred[0],1), np.round(phase_today,2), dphase_today]
     finch_xy.out_gp_kernel = Kernel
 
+    ff.show_sun()
+    ax = plt.gca()
+    ylim = ax.get_ylim()
+    if ylim[0]>0:
+        plt.ylim(0,None)
+    if ylim[1]<10:
+        plt.ylim(None,10)
+
     return fig 

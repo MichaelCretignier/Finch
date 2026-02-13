@@ -17,7 +17,7 @@ from . import Finch_GP as fgp
 from . import Finch_functions as ff
 from . import Finch_variables as fv
 
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 print(Fore.GREEN+"""\n[INFO FINCH]
 [INFO USER] FINCH version = """+__version__ +""" 
@@ -1693,6 +1693,27 @@ class tableXY(object):
             fig_title=fig_title,
             code_model=code_model,
             previous_period_estimate=previous_period_estimate) 
+
+def import_sun():
+    dataset = pd.read_csv(fv.sun_file,index_col=0)
+    x = np.array(dataset['deciyear'])
+    y = np.array(dataset['plage_fill'])
+    yerr = 0*y
+    instrument = ['MgII']*len(x)
+    reference = ['LISIRD']*len(x)
+    flag = 0*y
+    
+    #initiate the vector
+    vec = tableXY(x,y,yerr,proxy_name='MgII')
+    
+    #add the star info
+    vec.set_star(starname='Sun',teff=5775, logg=4.44, feh=0.00)
+
+    vec.set_instrument(instrument)
+    vec.set_reference(reference)
+    vec.set_flag(flag)
+
+    return vec
 
 def import_test(create_hydra=False):
     dataset = pd.read_csv(fv.test_file,index_col=0)

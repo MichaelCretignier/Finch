@@ -63,4 +63,4 @@ plt.show()
 
 print('\n\n[FINAL] Production of the final summary:')
 print('[FINAL] %s cycle is around %.2f years with an amplitude of %.1f %% and a mean activity level of %.1f %% (Min=%.1f%% | Max= %.1f %%)'%(vec.star_starname, vec.out_gp_pmag, vec.out_gp_ampmag, vec.out_gp_meanmag, vec.out_gp_meanmag-0.5*vec.out_gp_ampmag, vec.out_gp_meanmag+0.5*vec.out_gp_ampmag))
-print('[FINAL] The Sun has a comparison has a cycle period of 11.0 years, an amplitude of 10% and a mean activity level of 5% (Min=0% | Max=10%)')
+print('[FINAL] The Sun has a comparison has a cycle period of 11.0 years, an amplitude of ~8% and a mean activity level of 4% (Min=0% | Max=8%)')

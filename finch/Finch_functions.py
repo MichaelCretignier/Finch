@@ -9,7 +9,11 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 from bisect import bisect_left, bisect_right
+from . import Finch_variables as fv
 
+
+def rolling(array,window,quantile):
+    return np.ravel(np.array(pd.DataFrame(array).rolling(window=window,min_periods=1).quantile(quantile)))
 
 def ylabel_format(ylabel):
 
@@ -345,3 +349,13 @@ def vertical_offset(t1, y1, t2, y2, sigma, R):
         den += np.sum(w)
     return num/den if den > 0 else np.nan
 
+def show_sun():
+    dataset = pd.read_csv(fv.sun_file,index_col=0)
+    x = np.array(dataset['deciyear'])
+    y = np.array(dataset['plage_fill'])
+    ymean = rolling(y,window=100,quantile=0.5)
+    yinf = rolling(y,window=100,quantile=0.16)
+    ysup = rolling(y,window=100,quantile=0.84)
+    plt.plot(x,ymean,color='gold',lw=1,alpha=0.7)
+    plt.fill_between(x,0,ymean,color='gold',alpha=0.25)
+    plt.fill_between(x,yinf,ysup,color='orange',alpha=0.25)
