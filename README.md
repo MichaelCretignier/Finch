@@ -76,9 +76,15 @@ flag=1 data are rejected of FINCH analysis, but preserved in the plots
 
 ## Citations
 
-Even if Finch has never been properly presented in a paper, since this method was initially a standard analysis of the YARARA pipeline of Cretignier et al., 2021 paper, please cite it as a "publicly available function of the YARARA pipeline".
+Even if Finch has never been properly presented in a paper, since this method was initially a standard analysis of the YARARA pipeline of Cretignier et al., 2021 paper, please cite it as a "publicly available function of the YARARA pipeline". 
 
-ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
+The MHK activity index was explained in Cretignier et al. 2024a and 2024b.
+
+ADS Link : 
+
+1) [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
+2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
+3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
 
 ## Details Description of the Algorithm
 
