@@ -4,7 +4,7 @@ requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the 
 [project]
 name = "finch"
 version = "2.0.2"
-description = "A package to fit magnetic cycles on the MHK activity index coming from multi-instrument and"
+description = "A package to fit magnetic cycles on the MHK activity index coming from multi-instrument levels"
 authors = [
     {name = "Michael Cretignier", email = "michael.cretignier@physics.ox.ac.uk"}
 ]
@@ -12,6 +12,24 @@ readme = "README.md"
 license = {text = "MIT"}
 
 requires-python = "==3.12.5" 
+
+keywords = [
+    "astronomy",
+    "stellar activity",
+    "magnetic cycles",
+    "spectroscopy",
+    "exoplanets",
+    "time-series analysis"
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
 
 dependencies = [
 
@@ -46,3 +64,4 @@ Source = "https://github.com/MichaelCretignier/FINCH"
 [project.scripts] # Define scripts here if you have any
 
 [project.optional-dependencies] # Define optional dependencies here if you have any
+
