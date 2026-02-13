@@ -31,10 +31,12 @@ REQUIREMENT :
 
 Standard python libraries : 
 
-numpy (1.20.1) 
-scipy (1.7.3)
-matplotlib (3.3.4)
-pandas (1.4.1)
+numpy (1.26.4) \
+scipy (1.16.2) \
+matplotlib (3.10.6) \
+pandas (2.3.2) \
+colorama (0.4.6) \
+scikit-learn (1.7.2)
 
 —————————————
 CODE DETAIL :
