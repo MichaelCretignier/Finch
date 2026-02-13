@@ -1,4 +1,39 @@
-# FINCH (v2.0.3)
+Metadata-Version: 2.4
+Name: finch
+Version: 2.0.2
+Summary: A package to fit magnetic cycles on the MHK activity index coming from multi-instrument levels
+Author-email: Michael Cretignier <michael.cretignier@physics.ox.ac.uk>
+License: MIT
+Project-URL: Source, https://github.com/MichaelCretignier/FINCH
+Keywords: astronomy,stellar activity,magnetic cycles,spectroscopy,exoplanets,activity proxy,chromospheric activity,time-series analysis
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.12
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Requires-Python: ==3.12.5
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pandas==2.3.2; python_version >= "3.12"
+Requires-Dist: numpy==1.26.4; python_version >= "3.12"
+Requires-Dist: astropy==7.1.0; python_version >= "3.12"
+Requires-Dist: scipy==1.16.2; python_version >= "3.12"
+Requires-Dist: matplotlib==3.10.6; python_version >= "3.12"
+Requires-Dist: ipython==9.5.0; python_version >= "3.12"
+Requires-Dist: colorama==0.4.6; python_version >= "3.12"
+Requires-Dist: scikit-learn==1.7.2; python_version >= "3.12"
+Requires-Dist: pandas==1.4.1; python_version < "3.9"
+Requires-Dist: numpy==1.23.5; python_version < "3.9"
+Requires-Dist: astropy==5.2.2; python_version < "3.9"
+Requires-Dist: scipy==1.8; python_version < "3.9"
+Requires-Dist: matplotlib==3.5; python_version < "3.9"
+Requires-Dist: ipython==7.22.0; python_version < "3.9"
+Requires-Dist: colorama==0.4.4; python_version < "3.9"
+Requires-Dist: scikit-learn==0.24.1; python_version < "3.9"
+Dynamic: license-file
+
+# FINCH (v2.0.2)
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="750">
