@@ -61,6 +61,18 @@ Try to run the code:
 run example.py
 ```
 
+## FINCH file format
+
+Finch input are typical .csv files structure containing: 
+
+1) jdb \
+2) proxy \
+3) proxy uncertainties \
+4) instrument (spectrograph) \
+5) reference (sources) \
+6) flag (binary)
+
+flag=1 data are rejected of FINCH analysis, but preserved in the plots
 
 ## Citations
 
@@ -69,6 +81,8 @@ Even if Finch has never been properly presented in a paper, since this method wa
 ADS Link : https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
 
 ## Details Description of the Algorithm
+
+FINCH concat over different sources/references, but keep traces of the instruments for the offsets. 
 
 The magnetic cycle model is a simple sinusoids that includes polynomial drift and instrumental offsets.
 
