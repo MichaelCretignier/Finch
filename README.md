@@ -17,6 +17,10 @@ The code is fast and outlier-robust in order to deliver a period and its related
 
 https://github.com/MichaelCretignier/FINCH
 
+## Installation (Pip install) 
+
+Soon...
+
 ## Installation
 
 Download the directory and try to run the minimal example ```example.py``` with your own Python installation.
