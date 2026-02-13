@@ -1694,6 +1694,34 @@ class tableXY(object):
             code_model=code_model,
             previous_period_estimate=previous_period_estimate) 
 
+def import_csv(file, proxy_name, starname, teff, logg, feh, create_hydra=False):
+    dataset = pd.read_csv(fv.test_file,index_col=0)
+    if np.product(np.in1d(dataset.keys(),['jdb','proxy','proxy_std','instrument','reference','flag']))==1:
+        x = np.array(dataset['jdb'])
+        y = np.array(dataset['proxy'])
+        yerr = np.array(dataset['proxy_std'])
+        instrument = np.array(dataset['instrument'])
+        reference = np.array(dataset['reference'])
+        flag = np.array(dataset['flag'])
+        
+        #initiate the vector
+        vec = tableXY(x,y,yerr,proxy_name=proxy_name)
+        
+        #add the star info
+        vec.set_star(starname=starname,teff=teff, logg=logg, feh=feh)
+
+        vec.set_instrument(instrument)
+        vec.set_reference(reference)
+        vec.set_flag(flag)
+
+        if create_hydra:
+            vec.create_hydra()
+
+        return vec
+    else:
+        print('[ERROR] The csv file should contain the following columns: jdb, proxy, proxy_std, instrument, reference, flag')
+        return None
+
 def import_sun():
     dataset = pd.read_csv(fv.sun_file,index_col=0)
     x = np.array(dataset['deciyear'])
@@ -1716,27 +1744,7 @@ def import_sun():
     return vec
 
 def import_test(create_hydra=False):
-    dataset = pd.read_csv(fv.test_file,index_col=0)
-    x = np.array(dataset['jdb'])
-    y = np.array(dataset['proxy'])
-    yerr = np.array(dataset['proxy_std'])
-    instrument = np.array(dataset['instrument'])
-    reference = np.array(dataset['reference'])
-    flag = np.array(dataset['flag'])
-    
-    #initiate the vector
-    vec = tableXY(x,y,yerr,proxy_name='MHK')
-    
-    #add the star info
-    vec.set_star(starname='HD128621',teff=5142, logg=4.49, feh=0.15)
-
-    vec.set_instrument(instrument)
-    vec.set_reference(reference)
-    vec.set_flag(flag)
-
-    if create_hydra:
-        vec.create_hydra()
-
+    vec = import_csv(fv.test_file, proxy_name='MHK', starname='HD128621', teff=5142, logg=4.49, feh=0.15, create_hydra=create_hydra)
     return vec
 
 try: 

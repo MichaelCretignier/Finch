@@ -1,4 +1,4 @@
-# FINCH (v2.0.0)
+# FINCH (v2.0.1)
 
 <p align="center">
   <img src="logo.png" alt="Project logo" width="750">
