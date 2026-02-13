@@ -1,5 +1,6 @@
 #Created by Michael Cretignier 31.09.2023
 
+import calendar
 import datetime
 
 import matplotlib.pylab as plt
@@ -7,6 +8,29 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
+from bisect import bisect_left, bisect_right
+
+
+def ylabel_format(ylabel):
+
+    labels = {
+        'MHK_cleaned':r'$M_{HK}$ (prec.) [%]',
+        'MHK_cleaned2':r'$M_{HK}$ (acc.) [%]',    
+        'RHK':r'$\log R^{\prime}_{HK}$',    
+        }
+    
+    if ylabel in list(labels.keys()):
+        return labels[ylabel]
+    else:
+        return ylabel
+
+def format_time_unit(jdb,x_unit='days'):
+    if x_unit=='days':
+        return jdb
+    elif x_unit=='years':
+        return (jdb-60310.5)/365.25+2024
+    else:
+        return None
 
 def get_phase(array,period):
     new_array = np.sort((array%period))
@@ -19,6 +43,9 @@ def get_phase(array,period):
             return 0
     else:
         return 0
+
+def conv_phase_code(phase):
+    return '%.2f%s'%(0.5*np.sin(phase*np.pi/180)+0.5,['+','-'][int((phase-90)%360<180)])
 
 def return_branching_phase(array):
     array1 = array%360
@@ -120,12 +147,17 @@ def format_name(val,k1):
         return format_nb[k1]%(val)
     else:
         return '%.3f'%(val)
-
-def today():
-    today = datetime.datetime.now().isoformat()
-    today = float(today[0:4])*365.25+30.5*float(today[5:7])+float(today[8:10])
-    today = today*60221.0478530759/739208.75
-    return today
+    
+def today(fmt='jdb'):
+    today = datetime.date.today()
+    year = today.year
+    day_of_year = today.timetuple().tm_yday
+    total_days = 366 if calendar.isleap(year) else 365
+    decimal_year = year + (day_of_year - 1) / total_days
+    if fmt=='decimalyear':
+        return decimal_year
+    else:
+        return (decimal_year-2025.23389212)*365.25+60761.37062478
 
 def local_max(spectre,vicinity=5):
     vec_base = spectre[vicinity:-vicinity]
@@ -139,7 +171,7 @@ def local_max(spectre,vicinity=5):
     flux = spectre[index]       
     return np.array([index,flux])
 
-def corner(dataframe, score=None, fig=None):
+def corner(dataframe, nb_pts, score=None, fig=None):
     nb = len(dataframe.keys())
     offset=nb
     if fig is None:
@@ -171,7 +203,7 @@ def corner(dataframe, score=None, fig=None):
         v_std = np.std(np.array(dataframe[kw])[sub])
         tex = [r'$P_{mag}=$%.2f $\pm$ %.2f years'%(v,v_std),r'$K=$%.4f $\pm$ %.4f'%(v,v_std)][n]
         plt.text(-0.9,-0.25*n,tex,ha='left',va='center',fontsize=13) ; plt.xlim(-1,1) ; plt.ylim(-1,1)
-        if abs(v)/v_std<3:
+        if (abs(v)/v_std<2.5)|(nb_pts<4):
             warning = 1
     plt.text(-0.9,0.25,['Cycle detected','Cycle not detected'][warning],color=['g','r'][warning],fontsize=14)
     plt.axis('off')
@@ -265,3 +297,51 @@ def merge_sources(times, values, values_std, max_diff=3):
     merged_std = np.min(merged_std,axis=0)
 
     return merged_time, merged, merged_std, src_order
+
+def hinge_soft(x, slope, offset, slope2, x0, lamb):
+    return offset + slope*x + (slope2-slope) * np.log(1+np.exp(lamb*(x-x0)))/lamb
+
+def conv_smw_mhk(smw,teff):
+    if teff>6100:
+        teff = 6100
+    if teff<3000:
+        teff=3000
+    slope = 100*hinge_soft(teff/5778, -0.41346, 0.25300, 28.2320, 0.78761, 20.9049)
+    intercept = 100*hinge_soft(teff/5778, 35.520, 6.71928, -6.4585, -0.00794, 2.8009)
+    return smw*slope + intercept
+
+def string_contained_in(array,string,inv=False):
+    array = np.array(array)
+    split = np.array([len(i.split(string))-1 for i in array])
+    mask = split.astype('bool')
+    if inv:
+        mask = ~mask
+    return mask, array[mask]
+
+def vertical_offset(t1, y1, t2, y2, sigma, R):
+    # assumes t1,t2 sorted
+    t1 = np.asarray(t1)
+    y1 = np.asarray(y1)
+    t2 = np.asarray(t2)
+    y2 = np.asarray(y2)
+
+    y1 = y1[np.argsort(t1)]
+    t1 = np.sort(t1)    
+    y2 = y2[np.argsort(t2)]
+    t2 = np.sort(t2)    
+    
+    num, den = 0.0, 0.0
+    for ti, xi in zip(t1, y1):
+        a, b = ti - R, ti + R
+        L = bisect_left(t2, a)
+        U = bisect_right(t2, b)
+        if L == U:
+            continue
+        tt = t2[L:U]
+        yy = y2[L:U]
+        d = np.abs(ti - tt)
+        w = np.exp(-0.5*(d/sigma)**2)
+        num += np.sum(w * (xi - yy))
+        den += np.sum(w)
+    return num/den if den > 0 else np.nan
+
