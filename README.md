@@ -21,7 +21,7 @@ https://github.com/MichaelCretignier/FINCH
 
 Soon...
 
-## Installation
+## Installation (Git Clone)
 
 Download the directory and try to run the minimal example ```example.py``` with your own Python installation.
 If it crashes, install a Python environment:
