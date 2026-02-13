@@ -12,7 +12,7 @@ michael.cretignier@physics.ox.ac.uk
 
 ## Description
 
-Finch is a Python stand-alone code to fit the stellar magnetic cycle periods on activity proxies' time series.
+Finch is a Python package to fit the stellar magnetic cycle periods on activity proxies' time series.
 The code is fast and outlier-robust in order to deliver a period and its related uncertainty in a few seconds.
 
 https://github.com/MichaelCretignier/FINCH
@@ -49,17 +49,20 @@ Move inside the directory and launch an ipython shell:
 
 ```
 [TERMINAL]
-conda activate env finch
+conda activate finch
 cd .../GitHub/FINCH
 ipython
 ```
 
-Try to run the code:
+Then run the example using the matplotlib magic:
 
 ```
 [IPYTHON]
+%matplotlib
 run example.py
 ```
+
+
 
 ## FINCH file format
 
