@@ -63,7 +63,7 @@ run example.py
 
 ## FINCH file format
 
-Finch input are typical .csv files structure containing: 
+Finch input are typical .csv table files structure containing 6 columns: 
 
 1) jdb (jdb - 2,400,000)
 2) proxy (MHK in %)
