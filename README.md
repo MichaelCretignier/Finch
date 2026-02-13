@@ -48,6 +48,7 @@ Move inside the directory and launch an ipython shell:
 
 ```
 [TERMINAL]
+conda activate env finch
 cd .../GitHub/FINCH
 ipython
 ```
