@@ -1,0 +1,5 @@
+.DS_Store
+finch/__pycache__
+dist/
+finch.egg-info/
+
