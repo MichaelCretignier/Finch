@@ -17,7 +17,7 @@ from . import Finch_GP as fgp
 from . import Finch_functions as ff
 from . import Finch_variables as fv
 
-__version__ = '2.0.5'
+__version__ = '2.1.0'
 
 print(Fore.GREEN+"""\n[INFO FINCH]
 [INFO USER] FINCH version = """+__version__ +""" 
@@ -46,10 +46,10 @@ def return_std(proxy_name):
             'ESPRESSO18':  {'YARARA':0.5,'SNAKY':0.5,'HYDRA':0.5},
             'ESPRESSO19':  {'YARARA':0.5,'SNAKY':0.5,'HYDRA':0.5},
             'Xlum':  {'Ayres+14':0.5,'Ayres+23':0.5},
-            'HKP-1':  {'Baum+22':2,'Radick+18':1},
-            'HKP-2':  {'Baum+22':2,'Radick+18':1},
-            'HIRES-1':{'Baum+22':2,'Butler+17':1,'Isaacson+10':1,'Wright+04':1},
-            'HIRES-2':{'Baum+22':2,'Butler+17':2,'Isaacson+10':1,'Teklu+25':2},
+            'HKP-1':  {'GEN':5,'Baum+22':2,'Radick+18':1},
+            'HKP-2':  {'GEN':5,'Baum+22':2,'Radick+18':1},
+            'HIRES-1':{'GEN':5,'Baum+22':2,'Butler+17':1,'Isaacson+10':1,'Wright+04':1},
+            'HIRES-2':{'GEN':5,'Baum+22':2,'Butler+17':2,'Isaacson+10':1,'Teklu+25':2},
             }
     else:
         #instrumental_noise obtained from HD1461,HD1388,HD23249,HD10700,HD90156 
@@ -72,7 +72,7 @@ def return_std(proxy_name):
 
 class tableXY(object):
 
-    def __init__(self, x, y, yerr, proxy_name='proxy1'):
+    def __init__(self, x, y, yerr, proxy_name='MHK'):
 
         self.y = np.array(y)  
         self.x = np.array(x)  
@@ -158,6 +158,7 @@ class tableXY(object):
         mhk = ff.conv_smw_mhk(self.y,teff)
         relative = np.abs(self.yerr/self.y)
         mhk_std = np.abs(mhk*relative)
+        mhk_std[self.y==0] = 10
         self.y = mhk
         self.yerr = mhk_std 
 
@@ -411,15 +412,30 @@ class tableXY(object):
             sources = np.unique(v1.reference[~v1.mask_flag])
             self.masked(~mask_ins,replace=True)
             if len(sources)>1:
-                times = [v1.x[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
-                values = [v1.y[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
-                values_std = [v1.yerr[(v1.reference==s)&(~v1.mask_flag)] for s in sources]
-                merged_time, merged, merged_std, src_order = ff.merge_sources(times, values, values_std, max_diff=1)
-                ff.printv('References for instrument %s = '%(ins),other=sources[src_order],verbose=self.verbose)
+                nb = [np.sum((v1.reference==s)&(~v1.mask_flag)) for s in sources]
+                sources = sources[np.argsort(nb)]
+                ff.printv('[INFO] References for instrument %s = '%(ins),other=sources[-1],verbose=self.verbose)
+                t1 = v1.x[(v1.reference==sources[-1])&(~v1.mask_flag)]
+                y1 = v1.y[(v1.reference==sources[-1])&(~v1.mask_flag)]
+                y1_std = v1.yerr[(v1.reference==sources[-1])&(~v1.mask_flag)]
+
+                merged_time = [t1]
+                merged = [y1]
+                merged_std = [y1_std]
+                for s in sources[0:-1]:
+                    t2 = v1.x[(v1.reference==s)&(~v1.mask_flag)]
+                    y2 = v1.y[(v1.reference==s)&(~v1.mask_flag)]
+                    y2_std = v1.yerr[(v1.reference==s)&(~v1.mask_flag)]
+                    offset = ff.vertical_offset(t1, y1, t2, y2, 50, 50*1.5)
+                    merged_time.append(t2)
+                    merged.append(y2+offset)
+                    merged_std.append(y2_std)
+                merged_time = np.hstack(merged_time)
+                merged = np.hstack(merged)
+                merged_std = np.hstack(merged_std)
                 v1 = tableXY(merged_time, merged, merged_std, proxy_name=self.proxy_name)
                 v1.instrument = [ins]*len(v1.x)
                 v1.reference = [' & '.join(list(sources))]*len(v1.x)
-            
             self.merge(v1)
             self.order()
         self.masked(self.y==self.y,replace=True) #TBD understand nan, nan come from measurement with yerr=0 in some night binned
@@ -503,7 +519,6 @@ class tableXY(object):
         #self.masked(mask_kept)
 
     def set_ins_uncertainties(self,null_yerr=False):
-        
         for i in np.unique(self.instrument):
             mask_ins = self.instrument==i
             for s in np.unique(self.reference[mask_ins]):
@@ -555,7 +570,7 @@ class tableXY(object):
                     if 'YARARA' in self.ins_default_std[ins].keys():
                         ref_value = self.ins_default_std[ins]['YARARA']
                     else:
-                        ref_value=0
+                        ref_value=self.ins_default_std[ins]['GEN']
                 else:
                     ref_value=0
 
@@ -1387,7 +1402,6 @@ class tableXY(object):
         self.night_stack()
         self.instrument = np.array([i.split('$')[0] for i in self.instrument])
         self.merge_sources()
-
         reference = self.copy()
         seasons_t0 = ff.season_length(self.x)[0]
         self.split_instrument()
@@ -1395,7 +1409,7 @@ class tableXY(object):
             self.instrument_splited[ins].split_seasons(seasons_t0=seasons_t0)
             self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
             if data_driven_std: #second iteration for uncertainties on slope params
-                self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)
+                self.instrument_splited[ins].transform_vector(Plot=debug,data_driven_std=data_driven_std)            
         self.merge_instrument()
         reference.mask_flag = self.mask_flag
         self.bin.masked(~self.bin.mask_flag)
@@ -1444,6 +1458,9 @@ class tableXY(object):
                 print('\n[INFO] An offset of %.1f was detected between YARARA and non-YARARA'%(offset))
                 vec[1].y[~mask_yarara] += offset*1
                 mask_yarara = ff.string_contained_in(vec[0].reference,'YARARA')[0]
+                mask_snaky = ff.string_contained_in(vec[0].reference,'SNAKY')[0]
+                mask_hydra = ff.string_contained_in(vec[0].reference,'HYDRA')[0]
+                mask_yarara = mask_yarara|mask_snaky|mask_hydra
                 vec[0].y[~mask_yarara] += offset*1
 
         def gen_figure(name=None,x_unit='days'):
@@ -1795,7 +1812,7 @@ try:
             for c in cod:
                 print(' ° ',c)
             print('\n')
-            vec.set_ins_uncertainties()
+            #vec.set_ins_uncertainties(null_yerr=True)
         else:
             print('[INFO] %s not found in the database'%(starname))
             vec = None

@@ -240,68 +240,6 @@ def corner(dataframe, nb_pts, score=None, fig=None):
 
     return 1-warning
 
-def merge_sources(times, values, values_std, max_diff=3):
-
-    t = [x.copy() for x in times]
-    s = [y.copy() for y in values]
-    s_std = [yerr.copy() for yerr in values_std]
-
-    saves = []
-    for i1 in range(len(t)):
-        save = []
-        for i2 in range(len(t)):
-            if i2!=i1:
-                match = match_nearest(t[i1],t[i2]) ; match = match[abs(match[:,-1])<max_diff]
-                save.append(len(match))
-        saves.append(save)
-    saves = np.array(saves)
-    ref = np.argmax(np.mean(saves,axis=1))
-    src_order = [ref]+list(np.delete(np.arange(len(t)),ref)[np.argsort(saves[ref])[::-1]])
-
-    for iteration in range(10):
-        for i2 in src_order:
-            for i1 in src_order:
-                if i2!=i1:
-                    match = match_nearest(t[i1],t[i2]) ; match = match[abs(match[:,-1])<max_diff]
-                    y1 = s[i1][match[:,0].astype('int')]
-                    y2 = s[i2][match[:,1].astype('int')]
-                    jump = np.linspace(0,np.median(y2)-np.median(y1),100)
-                    offset = jump[np.argmin(mad((y2-jump[:,np.newaxis])/y1,axis=1))]
-                    slope = np.median((y2-offset)/y1)
-                    comp = np.setdiff1d(np.arange(len(t[i1])),match[:,0])
-                    t[i2] = np.hstack([t[i2],t[i1][comp]])
-                    s[i2] = np.hstack([s[i2],offset+slope*s[i1][comp]])
-                    s_std[i2] = np.hstack([s_std[i2],slope*s_std[i1][comp]])
-                    order = np.argsort(t[i2])
-                    s[i2] = s[i2][order]
-                    t[i2] = t[i2][order]
-        if np.std([len(i) for i in t])==0:
-            break
-    
-    merged = [s[src_order[0]]]
-    merged_std = [s_std[src_order[0]]]
-    for i1 in src_order[1:]:
-        y1 = s[i1]
-        y2 = s[src_order[0]]
-        jump = np.linspace(0,np.median(y2)-np.median(y1),100)
-        offset = jump[np.argmin(mad((y2-jump[:,np.newaxis])/y1,axis=1))]
-        slope = np.median((y2-offset)/y1)
-        merged.append(offset+slope*s[i1])
-        merged_std.append(slope*s_std[i1])
-    merged = np.array(merged)
-    merged_std = np.array(merged_std)
-    merged_time = t[src_order[0]]
-
-    if np.sum(merged_std!=0):
-        merged_std[merged_std==0] = np.min(merged_std[merged_std!=0])
-    else:
-        merged_std = 1e6*np.ones(np.shape(merged))
-    weights = 1/merged_std**2
-    merged = np.sum(merged*weights,axis=0)/np.sum(weights,axis=0)
-    merged_std = np.min(merged_std,axis=0)
-
-    return merged_time, merged, merged_std, src_order
-
 def hinge_soft(x, slope, offset, slope2, x0, lamb):
     return offset + slope*x + (slope2-slope) * np.log(1+np.exp(lamb*(x-x0)))/lamb
 
@@ -348,6 +286,71 @@ def vertical_offset(t1, y1, t2, y2, sigma, R):
         num += np.sum(w * (xi - yy))
         den += np.sum(w)
     return num/den if den > 0 else np.nan
+
+
+
+def merge_sources_backup(times, values, values_std, max_diff=3):
+
+    t = [x.copy() for x in times]
+    s = [y.copy() for y in values]
+    s_std = [yerr.copy() for yerr in values_std]
+
+    saves = []
+    for i1 in range(len(t)):
+        save = []
+        for i2 in range(len(t)):
+            if i2!=i1:
+                match = match_nearest(t[i1],t[i2]) ; match = match[abs(match[:,-1])<max_diff]
+                save.append(len(match))
+        saves.append(save)
+    saves = np.array(saves)
+    ref = np.argmax(np.mean(saves,axis=1))
+    src_order = [ref]+list(np.delete(np.arange(len(t)),ref)[np.argsort(saves[ref])[::-1]])
+
+    for iteration in range(10):
+        for i2 in src_order:
+            for i1 in src_order:
+                if i2!=i1:
+                    match = match_nearest(t[i1],t[i2]) ; match = match[abs(match[:,-1])<max_diff]
+                    y1 = s[i1][match[:,0].astype('int')]
+                    y2 = s[i2][match[:,1].astype('int')]
+                    jump = np.linspace(0,np.median(y2)-np.median(y1),100)
+                    offset = jump[np.argmin(mad((y2-jump[:,np.newaxis])/y1,axis=1))]
+                    slope = abs(np.median((y2-offset)/y1))
+                    comp = np.setdiff1d(np.arange(len(t[i1])),match[:,0])
+                    t[i2] = np.hstack([t[i2],t[i1][comp]])
+                    s[i2] = np.hstack([s[i2],offset+slope*s[i1][comp]])
+                    s_std[i2] = np.hstack([s_std[i2],slope*s_std[i1][comp]])
+                    order = np.argsort(t[i2])
+                    s[i2] = s[i2][order]
+                    t[i2] = t[i2][order]
+        if np.std([len(i) for i in t])==0:
+            break
+    
+    merged = [s[src_order[0]]]
+    merged_std = [s_std[src_order[0]]]
+    for i1 in src_order[1:]:
+        y1 = s[i1]
+        y2 = s[src_order[0]]
+        jump = np.linspace(0,np.median(y2)-np.median(y1),100)
+        offset = jump[np.argmin(mad((y2-jump[:,np.newaxis])/y1,axis=1))]
+        slope = np.median((y2-offset)/y1)
+        merged.append(offset+slope*s[i1])
+        merged_std.append(slope*s_std[i1])
+    merged = np.array(merged)
+    merged_std = np.array(merged_std)
+    merged_time = t[src_order[0]]
+
+    if np.sum(merged_std!=0):
+        merged_std[merged_std==0] = np.min(merged_std[merged_std!=0])
+    else:
+        merged_std = 1e6*np.ones(np.shape(merged))
+    weights = 1/merged_std**2
+    merged = np.sum(merged*weights,axis=0)/np.sum(weights,axis=0)
+    merged_std = np.min(merged_std,axis=0)
+
+    return merged_time, merged, merged_std, src_order
+
 
 def show_sun():
     dataset = pd.read_csv(fv.sun_file,index_col=0)
