@@ -17,7 +17,7 @@ michael.cretignier@physics.ox.ac.uk
 
 ## ⓶ Installation (pip install) 
 
-*(This feature will soon be available... Install by Git Clone for now)*
+*(This feature will soon be available... Install by [Git Clone](#flag1) for now)*
 
 Using conda:
 
@@ -28,6 +28,8 @@ pip install finch
 ```
 
 ## ⓷ Installation (Git Clone)
+
+<a id="flag1"></a>
 
 Download the directory and try to run the minimal example `example.py` with your own Python installation.
 If it crashes, install a Python environment:
