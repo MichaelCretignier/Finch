@@ -71,6 +71,8 @@ run example.py
 ##Tutorial
 
 ```python
+#Let's use the test FINCH dataset of Alpha Cen B
+
 import finch as Finch
 import matplotlib.pylab as plt
 import numpy as np
@@ -88,9 +90,6 @@ plt.figure(figsize=(18,6))
 # Show the time-series
 vec.plot() ; plt.legend() ; plt.xlabel('Jdb - 2,400,000 [days]') ; plt.ylabel('MHK [%%]') ; plt.show()
 
-# Fit cycle if at least 4 years baseline
-warning = vec.check_baseline()
-
 # FINCH can fit cycles with or without linear trend + with or without instrumental offsets
 # Let's fit a trend, but no instrumental offset (model = D1O0)
 
@@ -106,7 +105,7 @@ vec.fit_period_cycle(
 # FINCH can also test the 4 models and choose the best one using the automatic_fit option
 # Let's download again the time-series since fit_period_cycle modify the uncertainties
 
-vec = Finch.import_test(create_hydra=True)
+vec = Finch.import_test(create_hydra=True) #directory import and produce HYDRA
 
 vec.fit_period_cycle(
     automatic_fit = True, 
@@ -133,10 +132,6 @@ plt.show()
 # From the GP fit:
 # The next maximum of Alpha Cen B is predicted around 2027.21
 # The next minimum of Alpha Cen B is predicted around 2031.04
-
-print('\n\n[FINAL] Production of the final summary:')
-print('[FINAL] %s cycle is around %.2f years with an amplitude of %.1f %% and a mean activity level of %.1f %% (Min=%.1f%% | Max= %.1f %%)'%(vec.star_starname, vec.out_gp_pmag, vec.out_gp_ampmag, vec.out_gp_meanmag, vec.out_gp_meanmag-0.5*vec.out_gp_ampmag, vec.out_gp_meanmag+0.5*vec.out_gp_ampmag))
-print('[FINAL] The Sun as a comparison has a cycle period of 11.0 years, an amplitude of ~8% and a mean activity level of 4% (Min=0% | Max=8%)')
 ```
 
 ## FINCH file format
