@@ -154,11 +154,11 @@ FINCH input tables are typical `.csv` files containing at minimum 6 columns:
 5) reference (sources) 
 6) flag (binary)
 
-| jdb | proxy | proxy_err | instrument | reference | flag |
+| jdb | proxy | proxy_std | instrument | reference | flag |
 |------------------------|----------------|------------------|------------|------------|------|
 | 58736.344           | 10.43 | 1.34 | HARPS03 | Cretignier+24 | 0 |
-| 58737.874           | 7.43 | 2.02 | HARPS15 | Cretignier+24 | 0 |
-| 58738.877           | 6.43 | 1.02 | HARPS15 | Stalport+24 | 0 |
+| 58737.874           | 7.43 | 2.02 | HARPS15 | Cretignier+24 | 1 |
+| 58738.877           | 6.43 | 1.02 | HARPS15 | Suyumiya+24 | 0 |
 | ...           | ... | ... | ... | ... | ... |
 | 58755.431           | 5.7 | 0.34 | HARPS03 | SNAKY | 0 |
 | 58755.431           | 5.4 | 0.64 | HARPS03 | YARARA | 0 |
@@ -166,7 +166,7 @@ FINCH input tables are typical `.csv` files containing at minimum 6 columns:
 
 Data with `flag=1` are rejected of FINCH analysis, but preserved in the plots.
 
-FINCH can create a `tableXY` object by loading right formatted .csv table and specifying the stellar object:
+FINCH can create a `tableXY` object by loading right formatted `.csv` table with `.import_csv()` and specifying the stellar object:
 
 ```python
 import finch as Finch
