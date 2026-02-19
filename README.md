@@ -166,7 +166,7 @@ FINCH input tables are typical `.csv` files containing at minimum 6 columns:
 
 Data with `flag=1` are rejected of FINCH analysis, but preserved in the plots.
 
-FINCH can create a `tableXY` object by loading right formatted `.csv` table with `.import_csv()` and specifying the stellar object:
+FINCH can create a `Finch.tableXY` object by loading right formatted `.csv` table with `.import_csv()` and specifying the stellar object:
 
 ```python
 import finch as Finch
