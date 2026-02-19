@@ -136,7 +136,7 @@ plt.show()
 # The next minimum of Alpha Cen B is predicted around 2031.04
 ```
 
-## FINCH file format
+## ⓺ FINCH file format
 
 FINCH input tables are typical `.csv` files containing at minimum 6 columns: 
 
@@ -166,7 +166,7 @@ vec = Finch.import_csv(
 
 Stellar atmospheric parameters are optional but recommended.
 
-## Citations
+## ⓻ Citations
 
 Although FINCH has not yet been formally presented in a dedicated paper, as the method originates from the YARARA pipeline described in Cretignier et al. (2021), please cite it as a "publicly available function of the YARARA pipeline". 
 
@@ -178,7 +178,7 @@ ADS Link :
 2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
 3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
 
-## Details Description of the Algorithm
+## ⓼ Details Description of the Algorithm
 
 FINCH combines data from different sources while keeping track of instrument-dependent offsets.
 
