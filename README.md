@@ -90,7 +90,9 @@ plt.figure(figsize=(18,6))
 # Show the time-series
 vec.plot() ; plt.legend() ; plt.xlabel('Jdb - 2,400,000 [days]') ; plt.ylabel('MHK [%%]') ; plt.show()
 
-# Merge SNAKY and YARARA to create a HYDRA time-series
+# You see it's a two nested level with multi-instrument and multi-sources
+
+# Merge SNAKY and YARARA sources to create a HYDRA source time-series
 vec.create_hydra()
 
 plt.figure(figsize=(18,6))

@@ -46,10 +46,10 @@ def return_std(proxy_name):
             'ESPRESSO18':  {'YARARA':0.5,'SNAKY':0.5,'HYDRA':0.5},
             'ESPRESSO19':  {'YARARA':0.5,'SNAKY':0.5,'HYDRA':0.5},
             'Xlum':  {'Ayres+14':0.5,'Ayres+23':0.5},
-            'HKP-1':  {'GEN':5,'Baum+22':2,'Radick+18':1},
-            'HKP-2':  {'GEN':5,'Baum+22':2,'Radick+18':1},
-            'HIRES-1':{'GEN':5,'Baum+22':2,'Butler+17':1,'Isaacson+10':1,'Wright+04':1},
-            'HIRES-2':{'GEN':5,'Baum+22':2,'Butler+17':2,'Isaacson+10':1,'Teklu+25':2},
+            'HKP-1':  {'Baum+22':2,'Radick+18':1},
+            'HKP-2':  {'Baum+22':2,'Radick+18':1},
+            'HIRES-1':{'Baum+22':2,'Butler+17':1,'Isaacson+10':1,'Wright+04':1},
+            'HIRES-2':{'Baum+22':2,'Butler+17':2,'Isaacson+10':1,'Teklu+25':2},
             }
     else:
         #instrumental_noise obtained from HD1461,HD1388,HD23249,HD10700,HD90156 
@@ -570,7 +570,7 @@ class tableXY(object):
                     if 'YARARA' in self.ins_default_std[ins].keys():
                         ref_value = self.ins_default_std[ins]['YARARA']
                     else:
-                        ref_value=self.ins_default_std[ins]['GEN']
+                        ref_value=0
                 else:
                     ref_value=0
 
