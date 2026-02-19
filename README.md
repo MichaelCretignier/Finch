@@ -147,9 +147,15 @@ plt.show()
 
 FINCH input tables are typical `.csv` files containing at minimum 6 columns: 
 
+1) jdb (jdb - 2,400,000) 
+2) proxy (MHK in %) 
+3) proxy uncertainties 
+4) instrument (spectrograph) 
+5) reference (sources) 
+6) flag (binary)
+
 | jdb | proxy | proxy_err | instrument | reference | flag |
 |------------------------|----------------|------------------|------------|------------|------|
-| Julian Date (JDB - 2,400,000)           | Activity proxy | Proxy uncertainty | Spectrograph name | Data source | Binary quality flag |
 | 58736.344           | 10.43 | 1.34 | HARPS03 | Cretignier+24 | 0 |
 | 58737.874           | 7.43 | 2.02 | HARPS15 | Cretignier+24 | 0 |
 | 58738.877           | 6.43 | 1.02 | HARPS15 | Stalport+24 | 0 |
