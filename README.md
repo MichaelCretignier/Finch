@@ -160,6 +160,8 @@ FINCH input tables are typical `.csv` files containing at minimum 6 columns:
 | 58737.874           | 7.43 | 2.02 | HARPS15 | Cretignier+24 | 0 |
 | 58738.877           | 6.43 | 1.02 | HARPS15 | Stalport+24 | 0 |
 | ...           | ... | ... | ... | ... | ... |
+| 58755.431           | 5.7 | 0.34 | HARPS03 | SNAKY | 0 |
+| 58755.431           | 5.4 | 0.64 | HARPS03 | YARARA | 0 |
 | 58758.746           | 2.7 | 1.64 | HARPS03 | Cretignier+24 | 0 |
 
 Data with `flag=1` are rejected of FINCH analysis, but preserved in the plots.
