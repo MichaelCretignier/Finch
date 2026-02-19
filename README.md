@@ -9,13 +9,15 @@ The code is fast and robust to outliers, delivering a period estimate and its as
 
 https://github.com/MichaelCretignier/FINCH
 
-## Contact Me
+## ⓵ Contact Me
 
 If you encounter any issues, please contact me at:
 
 michael.cretignier@physics.ox.ac.uk
 
-## Installation (pip install) 
+## ⓶ Installation (pip install) 
+
+*(This feature will soon be available... Install by Git Clone for now)*
 
 Using conda:
 
@@ -25,7 +27,7 @@ conda activate finch
 pip install finch
 ```
 
-## Installation (Git Clone)
+## ⓷ Installation (Git Clone)
 
 Download the directory and try to run the minimal example `example.py` with your own Python installation.
 If it crashes, install a Python environment:
@@ -51,7 +53,7 @@ pip install --upgrade pip
 pip install -r requirements_3.12.5.txt
 ```
 
-## Test minimal example
+## ⓸ Test minimal example
 
 Move inside the `FINCH/` directory and launch an IPython shell:
 
@@ -68,7 +70,7 @@ Then run the example using the magic matplotlib command line `%matplotlib` :
 run example.py
 ```
 
-##Tutorial
+## ⓹ Tutorial
 
 ```python
 #Let's use the test FINCH dataset of Alpha Cen B
