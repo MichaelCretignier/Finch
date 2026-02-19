@@ -57,7 +57,7 @@ pip install -r requirements_3.12.5.txt
 
 ## ⓸ Test minimal example
 
-Move inside the `FINCH/` directory and launch an IPython shell:
+Move inside the `..GitHub/FINCH/` directory and launch an IPython shell:
 
 ```bash
 conda activate finch
@@ -76,6 +76,9 @@ run example.py
 
 ```python
 #Let's use the test FINCH dataset of Alpha Cen B
+
+import sys
+sys.path.append('../GitHub/FINCH/') # allow to launch FINCH everywhere on your machine
 
 import finch as Finch
 import matplotlib.pylab as plt
