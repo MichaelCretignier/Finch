@@ -114,7 +114,7 @@ vec.fit_period_cycle(
 # FINCH can also test the 4 models and choose the best one using the automatic_fit option
 # Let's download again the time-series since fit_period_cycle modify the uncertainties
 
-vec = Finch.import_test(create_hydra=True) #directory import and produce HYDRA
+vec = Finch.import_test(create_hydra=True) # import + HYDRA creation
 
 vec.fit_period_cycle(
     automatic_fit = True, 
