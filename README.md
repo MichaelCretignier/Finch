@@ -39,8 +39,8 @@ pip install finch
 cd .../GitHub/FINCH/
 ```
 
-Try to run the minimal example `...FINCH/example.py` with your own Python installation.
-If it crashes, install a Python environment:
+*Try to run the minimal example `...FINCH/example.py` with your own Python installation.\
+If it crashes, install a Python environment as below:*
 
 ### [Option 1 - Mac M4 Chip] Conda install (Python 3.12.5)
 
