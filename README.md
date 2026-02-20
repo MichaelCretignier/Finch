@@ -69,7 +69,9 @@ conda activate finch
 conda env list
 ```
 
-### [Option 2] Venv install (Python 3.12.5)
+### [Option 2] Venv install
+
+*(Be sure to have install Python 3.12.5 on your own)*
 
 ```bash
 python3 -m venv finch
