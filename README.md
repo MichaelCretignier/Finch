@@ -36,7 +36,7 @@ pip install finch
 Download the directory and enter `..GitHub/FINCH/`:
 
 ```bash
-cd .../GitHub/SNAKY/
+cd .../GitHub/FINCH/
 ```
 
 Try to run the minimal example `example.py` with your own Python installation.
