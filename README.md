@@ -46,12 +46,15 @@ If it crashes, install a Python environment:
 
 ```bash
 conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 scipy=1.16.2 matplotlib=3.10.6 ipython=9.5.0 colorama=0.4.6 scikit-learn=1.7.2 -y 
+conda activate finch
+
 ```
 
 ### [Option 1 - Mac Intel Chip] Conda install (Python 3.8.8)
 
 ```bash
 conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scipy=1.8 matplotlib=3.5 ipython=7.22.0 colorama=0.4.4 scikit-learn=0.24.1 -y 
+conda activate finch
 ```
 
 ### [Option 2] Venv install (Python 3.12.5)
@@ -63,12 +66,17 @@ pip install --upgrade pip
 pip install -r requirements_3.12.5.txt
 ```
 
+*Check if the finch environment exists and is active:*
+
+```bash
+conda env list
+```
+
 ## ⓸ Test minimal example
 
 Move inside the `..GitHub/FINCH/` directory and launch an IPython shell:
 
 ```bash
-conda activate finch
 cd .../GitHub/FINCH/
 ipython
 ```
