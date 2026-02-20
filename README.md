@@ -33,7 +33,13 @@ pip install finch
 
 <a id="flag1"></a>
 
-Download the directory and try to run the minimal example `example.py` with your own Python installation.
+Download the directory and enter `..GitHub/FINCH/`:
+
+```bash
+cd .../GitHub/SNAKY/
+```
+
+Try to run the minimal example `example.py` with your own Python installation.
 If it crashes, install a Python environment:
 
 [Mac M4 Chip] Python environment (Conda install) (Python 3.12.5)
