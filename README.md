@@ -55,7 +55,7 @@ conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 sci
 conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scipy=1.8 matplotlib=3.5 ipython=7.22.0 colorama=0.4.4 scikit-learn=0.24.1 -y 
 ```
 
-*Then activate the `finch` environment:
+*Then activate the `finch` environment:*
 
 ```bash
 conda activate finch
