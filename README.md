@@ -33,7 +33,7 @@ pip install finch
 
 <a id="flag1"></a>
 
-Download the directory and enter `..GitHub/FINCH/`:
+*Git Clone / Download this GitHub repository on your own machine and move in the directory.*
 
 ```bash
 cd .../GitHub/FINCH/
