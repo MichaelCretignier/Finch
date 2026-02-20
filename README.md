@@ -39,7 +39,7 @@ Download the directory and enter `..GitHub/FINCH/`:
 cd .../GitHub/FINCH/
 ```
 
-Try to run the minimal example `example.py` with your own Python installation.
+Try to run the minimal example `...FINCH/example.py` with your own Python installation.
 If it crashes, install a Python environment:
 
 [Mac M4 Chip] Python environment (Conda install) (Python 3.12.5)
