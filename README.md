@@ -42,19 +42,19 @@ cd .../GitHub/FINCH/
 Try to run the minimal example `...FINCH/example.py` with your own Python installation.
 If it crashes, install a Python environment:
 
-[Mac M4 Chip] Python environment (Conda install) (Python 3.12.5)
+### [Option 1 - Mac M4 Chip] Conda install (Python 3.12.5)
 
 ```bash
 conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 scipy=1.16.2 matplotlib=3.10.6 ipython=9.5.0 colorama=0.4.6 scikit-learn=1.7.2 -y 
 ```
 
-[Mac Intel Chip] Python environment (Conda install) (Python 3.8.8)
+### [Option 1 - Mac Intel Chip] Conda install (Python 3.8.8)
 
 ```bash
 conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scipy=1.8 matplotlib=3.5 ipython=7.22.0 colorama=0.4.4 scikit-learn=0.24.1 -y 
 ```
 
-[Alternative to conda] Python environment (Venv install)
+### [Option 2] Venv install (Python 3.12.5)
 
 ```bash
 python3 -m venv finch
