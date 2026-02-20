@@ -46,7 +46,6 @@ If it crashes, install a Python environment:
 
 ```bash
 conda create -n finch -c conda-forge python=3.12.5 numpy=1.26.4 pandas=2.3.2 scipy=1.16.2 matplotlib=3.10.6 ipython=9.5.0 colorama=0.4.6 scikit-learn=1.7.2 -y 
-conda activate finch
 
 ```
 
@@ -54,6 +53,11 @@ conda activate finch
 
 ```bash
 conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scipy=1.8 matplotlib=3.5 ipython=7.22.0 colorama=0.4.4 scikit-learn=0.24.1 -y 
+```
+
+*Then activate the `finch` environment:
+
+```bash
 conda activate finch
 ```
 
