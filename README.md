@@ -61,6 +61,12 @@ conda create -n finch -c conda-forge python=3.8.8 numpy=1.23.5 pandas=1.4.1 scip
 conda activate finch
 ```
 
+*Check if the finch environment exists and is active:*
+
+```bash
+conda env list
+```
+
 ### [Option 2] Venv install (Python 3.12.5)
 
 ```bash
@@ -68,12 +74,6 @@ python3 -m venv finch
 source finch/bin/activate 
 pip install --upgrade pip 
 pip install -r requirements_3.12.5.txt
-```
-
-*Check if the finch environment exists and is active:*
-
-```bash
-conda env list
 ```
 
 ## ⓸ Test minimal example
