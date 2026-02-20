@@ -19,6 +19,7 @@ michael.cretignier@physics.ox.ac.uk
 
 *(This feature will soon be available... Install by [Git Clone](#flag1) for now)*
 
+<!--
 Using conda:
 
 ```bash
@@ -26,6 +27,7 @@ conda create -n finch python=3.12.5
 conda activate finch
 pip install finch
 ```
+ -->
 
 ## ⓷ Installation (Git Clone)
 
@@ -158,7 +160,7 @@ FINCH input tables are typical `.csv` files containing at minimum 6 columns:
 |------------------------|----------------|------------------|------------|------------|------|
 | 58736.344           | 10.43 | 1.34 | HARPS03 | Cretignier+24 | 0 |
 | 58737.874           | 7.43 | 2.02 | HARPS15 | Cretignier+24 | 1 |
-| 58738.877           | 6.43 | 1.02 | HARPS15 | Suyumiya+24 | 0 |
+| 58738.877           | 6.43 | 1.02 | HARPS15 | Suzumiya+24 | 0 |
 | ...           | ... | ... | ... | ... | ... |
 | 58755.431           | 5.7 | 0.34 | HARPS03 | SNAKY | 0 |
 | 58755.431           | 5.4 | 0.64 | HARPS03 | YARARA | 0 |
@@ -211,6 +213,5 @@ A Gaussian Process can then be run using the previous fit as an initial guess, e
 
 
 ```bash
-[TERMINAL] 
 conda remove --name finch --all
 ```
