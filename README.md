@@ -233,6 +233,9 @@ The code contains an automatic mode that compares different pre-registered model
 
 A Gaussian Process can then be run using the previous fit as an initial guess, ensuring stability.
 
+## Uninstall
+
+*You can delete the finch Python environment with:*
 
 ```bash
 conda remove --name finch --all
