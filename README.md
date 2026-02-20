@@ -215,9 +215,9 @@ The MHK activity index was explained in Cretignier et al. 2024a and 2024b.
 
 ADS Link : 
 
-1) [Cretignier et al. 2021] https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract
-2) [Cretignier et al. 2024a] https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract
-3) [Cretignier et al. 2024b] https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract
+1) [Cretignier et al. 2021](https://ui.adsabs.harvard.edu/abs/2021A%26A...653A..43C/abstract)
+2) [Cretignier et al. 2024a](https://ui.adsabs.harvard.edu/abs/2024MNRAS.527.2940C/abstract)
+3) [Cretignier et al. 2024b](https://ui.adsabs.harvard.edu/abs/2024MNRAS.535.2562C/abstract)
 
 ## ⓼ Details Description of the Algorithm
 
