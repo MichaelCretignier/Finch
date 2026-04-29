@@ -10,6 +10,15 @@ from scipy.interpolate import interp1d
 
 from bisect import bisect_left, bisect_right
 from . import Finch_variables as fv
+import re
+
+def shorten_refs(label):
+    def repl(match):
+        author = match.group(1)
+        year = match.group(2)
+        return f"{author[0]}+{year[-2:]}"
+    
+    return re.sub(r'([A-Za-z]+)\+(\d{2,4})', repl, label)
 
 
 def rolling(array,window,quantile):

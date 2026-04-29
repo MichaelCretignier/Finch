@@ -169,7 +169,7 @@ class tableXY(object):
                         for i,s in enumerate(np.unique(sources)):
                             if self.print_label:
                                 if self.print_reference:
-                                    label = '%s (%s)'%(ins,s)
+                                    label = '%s (%s)'%(ins,ff.shorten_refs(s))
                                 else:
                                     label = '%s'%(ins)
                             else:
